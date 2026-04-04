@@ -1,0 +1,74 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+import { GearClient, type GearItemRow } from "./gear-client";
+
+function normalizeGearItems(
+  rows:
+    | {
+        id: string;
+        name: string;
+        brand: string | null;
+        model: string | null;
+        condition: string | null;
+        weight: number | null;
+        notes: string | null;
+        category_id: string | null;
+        categories:
+          | { name: string }
+          | { name: string }[]
+          | null;
+      }[]
+    | null,
+): GearItemRow[] {
+  if (!rows) return [];
+  return rows.map((row) => ({
+    ...row,
+    categories: Array.isArray(row.categories)
+      ? (row.categories[0] ?? null)
+      : row.categories,
+  }));
+}
+
+export default async function GearPage() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?next=/gear");
+  }
+
+  const { data: categories, error: categoriesError } = await supabase
+    .from("categories")
+    .select("id, name")
+    .order("name");
+
+  const { data: items, error: itemsError } = await supabase
+    .from("gear_items")
+    .select(
+      `
+      id,
+      name,
+      brand,
+      model,
+      condition,
+      weight,
+      notes,
+      category_id,
+      categories ( name )
+    `,
+    )
+    .order("created_at", { ascending: false });
+
+  return (
+    <GearClient
+      userEmail={user.email ?? ""}
+      categories={categories ?? []}
+      items={normalizeGearItems(items)}
+      loadError={categoriesError?.message ?? itemsError?.message}
+    />
+  );
+}
