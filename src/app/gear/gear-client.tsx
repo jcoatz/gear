@@ -111,23 +111,6 @@ export function GearClient({
     defaultValues,
   });
 
-  const categoryItems = useMemo(
-    () =>
-      Object.fromEntries(categories.map((c) => [c.id, c.name])) as Record<
-        string,
-        string
-      >,
-    [categories],
-  );
-
-  const conditionItems = useMemo(
-    () =>
-      Object.fromEntries(
-        GEAR_CONDITIONS.map((c) => [c, CONDITION_LABELS[c]]),
-      ) as Record<string, string>,
-    [],
-  );
-
   const totalWeight = useMemo(
     () =>
       items.reduce((sum, item) => sum + (item.weight ?? 0), 0),
@@ -403,10 +386,8 @@ export function GearClient({
                       name="category_id"
                       render={({ field, fieldState }) => (
                         <Select
-                          disabled={categories.length === 0}
                           value={field.value || null}
                           onValueChange={(v) => field.onChange(v ?? "")}
-                          items={categoryItems}
                         >
                           <SelectTrigger
                             className="w-full"
@@ -442,7 +423,6 @@ export function GearClient({
                               (v ?? "good") as GearItemFormValues["condition"],
                             )
                           }
-                          items={conditionItems}
                         >
                           <SelectTrigger
                             className="w-full"
