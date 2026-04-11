@@ -65,7 +65,15 @@ export async function addGearItems(
 ): Promise<AddGearItemsResult> {
   const parsed = bulkGearItemsSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, message: "Invalid items. Please try again." };
+    const issues = parsed.error?.issues ?? [];
+    const detail = issues
+      .slice(0, 3)
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    return {
+      ok: false,
+      message: detail || "Invalid items. Please try again.",
+    };
   }
 
   const cookieStore = await cookies();
