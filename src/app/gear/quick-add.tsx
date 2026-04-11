@@ -80,25 +80,16 @@ export function QuickAdd({ categories }: QuickAddProps) {
     if (!selectedPkg || checkedCount === 0) return;
 
     const items: BulkGearItem[] = selectedPkg.items
-      .filter((_, i) => checkedItems[i].checked)
-      .map((template, i) => {
-        const state = checkedItems.find((_, ci) => {
-          // Find the corresponding checked item
-          let checkedIndex = 0;
-          for (let j = 0; j < checkedItems.length; j++) {
-            if (checkedItems[j].checked) {
-              if (checkedIndex === i) return j === ci;
-              checkedIndex++;
-            }
-          }
-          return false;
-        });
+      .map((template, i) => ({ template, state: checkedItems[i] }))
+      .filter((entry) => entry.state?.checked)
+      .map(({ template, state }) => {
+        const catId = categoryMap.get(template.categoryName);
         return {
           name: template.name,
-          brand: state?.brandOverride ?? template.suggestedBrand,
-          category_id: categoryMap.get(template.categoryName) ?? null,
+          brand: (state.brandOverride ?? template.suggestedBrand) || null,
+          category_id: catId !== undefined ? catId : null,
           condition: "good" as const,
-          weight: template.estimatedWeightKg,
+          weight: template.estimatedWeightKg ?? null,
         };
       });
 

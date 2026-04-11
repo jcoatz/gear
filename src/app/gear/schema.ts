@@ -31,10 +31,10 @@ export const CONDITION_LABELS: Record<(typeof GEAR_CONDITIONS)[number], string> 
 
 export const bulkGearItemSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  brand: z.string().nullable(),
-  category_id: z.string().uuid().nullable(),
+  brand: z.union([z.string(), z.null()]),
+  category_id: z.union([z.string().uuid(), z.null()]),
   condition: z.enum(GEAR_CONDITIONS),
-  weight: z.number().nullable(),
+  weight: z.union([z.number(), z.null()]),
 });
 
 export type BulkGearItem = z.infer<typeof bulkGearItemSchema>;
