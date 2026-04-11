@@ -1,11 +1,17 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Tent,
-  CloudSun,
-  Snowflake,
-  Mountain,
+  Compass,
   Car,
+  CloudSun,
+  Flame,
   Footprints,
+  Moon,
+  Mountain,
+  Package,
+  ShieldAlert,
+  Shirt,
+  Snowflake,
+  Tent,
 } from "lucide-react";
 
 export type GearTemplate = {
@@ -137,3 +143,13 @@ export const GEAR_PACKAGES: GearPackage[] = [
     ],
   },
 ];
+
+export const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "Tents & Shelters": Tent,
+  "Sleep Systems": Moon,
+  Cooking: Flame,
+  Clothing: Shirt,
+  Navigation: Compass,
+  Safety: ShieldAlert,
+  Other: Package,
+};

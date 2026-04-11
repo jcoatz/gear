@@ -3,11 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Backpack,
+  LayoutGrid,
   LogOut,
   Package,
   Plus,
   Scale,
   Tag,
+  Warehouse,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -43,6 +45,7 @@ import { createClient } from "@/utils/supabase/client";
 import { addGearItem } from "./actions";
 import { POPULAR_BRANDS } from "./catalog";
 import { QuickAdd } from "./quick-add";
+import { GearRoom } from "./room/gear-room";
 import {
   CONDITION_LABELS,
   GEAR_CONDITIONS,
@@ -86,6 +89,7 @@ export function GearClient({
   loadError,
 }: GearClientProps) {
   const router = useRouter();
+  const [viewMode, setViewMode] = useState<"grid" | "room">("grid");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -157,10 +161,39 @@ export function GearClient({
             <p className="text-sm text-muted-foreground">{userEmail}</p>
           </div>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={handleSignOut}>
-          <LogOut size={16} className="mr-1.5" />
-          Sign out
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "grid"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid size={14} />
+              Grid
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("room")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "room"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Warehouse size={14} />
+              Room
+            </button>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={handleSignOut}>
+            <LogOut size={16} className="mr-1.5" />
+            Sign out
+          </Button>
+        </div>
       </header>
 
       {loadError ? (
@@ -202,8 +235,10 @@ export function GearClient({
         </div>
       </div>
 
-      {/* Gear items grid */}
-      {items.length === 0 ? (
+      {/* Gear items — Grid or Room view */}
+      {viewMode === "room" ? (
+        <GearRoom items={items} categories={categories} />
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-card/50 px-6 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <Backpack size={28} className="text-muted-foreground" />
