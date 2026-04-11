@@ -41,6 +41,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { addGearItem } from "./actions";
+import { POPULAR_BRANDS } from "./catalog";
+import { QuickAdd } from "./quick-add";
 import {
   CONDITION_LABELS,
   GEAR_CONDITIONS,
@@ -265,6 +267,9 @@ export function GearClient({
         </div>
       )}
 
+      {/* Quick add */}
+      <QuickAdd categories={categories} />
+
       {/* Add gear form */}
       <Card>
         <CardHeader>
@@ -326,6 +331,18 @@ export function GearClient({
                       aria-invalid={!!form.formState.errors.brand}
                       {...form.register("brand")}
                     />
+                    <div className="flex flex-wrap gap-1">
+                      {POPULAR_BRANDS.slice(0, 8).map((brand) => (
+                        <button
+                          key={brand}
+                          type="button"
+                          onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
+                          className="rounded-full border bg-background px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                        >
+                          {brand}
+                        </button>
+                      ))}
+                    </div>
                     <FieldError errors={[form.formState.errors.brand]} />
                   </FieldContent>
                 </Field>

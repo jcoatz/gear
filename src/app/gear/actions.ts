@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { gearItemFormSchema } from "./schema";
+import { bulkGearItemsSchema, gearItemFormSchema } from "./schema";
 
 export type AddGearItemResult =
   | { ok: true }
@@ -54,4 +54,47 @@ export async function addGearItem(
 
   revalidatePath("/gear");
   return { ok: true };
+}
+
+export type AddGearItemsResult =
+  | { ok: true; count: number }
+  | { ok: false; message: string };
+
+export async function addGearItems(
+  input: unknown,
+): Promise<AddGearItemsResult> {
+  const parsed = bulkGearItemsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, message: "Invalid items. Please try again." };
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "You must be signed in." };
+  }
+
+  const rows = parsed.data.map((item) => ({
+    user_id: user.id,
+    name: item.name.trim(),
+    brand: item.brand?.trim() || null,
+    model: null,
+    category_id: item.category_id,
+    condition: item.condition,
+    weight: item.weight,
+    notes: null,
+  }));
+
+  const { error } = await supabase.from("gear_items").insert(rows);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/gear");
+  return { ok: true, count: rows.length };
 }

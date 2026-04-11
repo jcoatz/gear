@@ -28,3 +28,15 @@ export const CONDITION_LABELS: Record<(typeof GEAR_CONDITIONS)[number], string> 
     fair: "Fair",
     poor: "Poor",
   };
+
+export const bulkGearItemSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  brand: z.string().nullable(),
+  category_id: z.string().uuid().nullable(),
+  condition: z.enum(GEAR_CONDITIONS),
+  weight: z.number().nullable(),
+});
+
+export type BulkGearItem = z.infer<typeof bulkGearItemSchema>;
+
+export const bulkGearItemsSchema = z.array(bulkGearItemSchema).min(1).max(50);
