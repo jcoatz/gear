@@ -1,6 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Backpack,
+  LogOut,
+  Package,
+  Plus,
+  Scale,
+  Tag,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -30,14 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { addGearItem } from "./actions";
@@ -67,6 +67,14 @@ type GearClientProps = {
   categories: CategoryRow[];
   items: GearItemRow[];
   loadError?: string;
+};
+
+const CONDITION_COLORS: Record<string, string> = {
+  new: "bg-emerald-100 text-emerald-800",
+  like_new: "bg-teal-100 text-teal-800",
+  good: "bg-sky-100 text-sky-800",
+  fair: "bg-amber-100 text-amber-800",
+  poor: "bg-red-100 text-red-800",
 };
 
 export function GearClient({
@@ -114,6 +122,17 @@ export function GearClient({
     [],
   );
 
+  const totalWeight = useMemo(
+    () =>
+      items.reduce((sum, item) => sum + (item.weight ?? 0), 0),
+    [items],
+  );
+
+  const categoryCount = useMemo(
+    () => new Set(items.map((i) => i.categories?.name).filter(Boolean)).size,
+    [items],
+  );
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -122,15 +141,22 @@ export function GearClient({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Gear
-          </h1>
-          <p className="text-sm text-muted-foreground">{userEmail}</p>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6">
+      {/* Header */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <Backpack size={20} strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="font-heading text-2xl font-bold tracking-tight">
+              My Gear
+            </h1>
+            <p className="text-sm text-muted-foreground">{userEmail}</p>
+          </div>
         </div>
-        <Button type="button" variant="outline" onClick={handleSignOut}>
+        <Button type="button" variant="outline" size="sm" onClick={handleSignOut}>
+          <LogOut size={16} className="mr-1.5" />
           Sign out
         </Button>
       </header>
@@ -141,68 +167,115 @@ export function GearClient({
         </p>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your items</CardTitle>
-          <CardDescription>
-            Gear linked to your account (row-level security in Supabase).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No gear yet. Add your first item with the form below.
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Package size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-semibold leading-none">{items.length}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Items</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+            <Scale size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-semibold leading-none">
+              {totalWeight > 0 ? totalWeight.toFixed(1) : "0"}
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Condition</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead className="min-w-[12rem] whitespace-normal">
-                    Notes
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell>{row.brand ?? "—"}</TableCell>
-                    <TableCell>{row.model ?? "—"}</TableCell>
-                    <TableCell>{row.categories?.name ?? "—"}</TableCell>
-                    <TableCell>
-                      {row.condition
-                        ? (CONDITION_LABELS[
-                            row.condition as keyof typeof CONDITION_LABELS
-                          ] ?? row.condition)
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {row.weight != null ? String(row.weight) : "—"}
-                    </TableCell>
-                    <TableCell className="max-w-xs whitespace-normal">
-                      {row.notes ?? "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            <p className="mt-0.5 text-xs text-muted-foreground">Total kg</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
+            <Tag size={18} />
+          </div>
+          <div>
+            <p className="text-2xl font-semibold leading-none">{categoryCount}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Categories</p>
+          </div>
+        </div>
+      </div>
 
+      {/* Gear items grid */}
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-card/50 px-6 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+            <Backpack size={28} className="text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium">No gear yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add your first item with the form below to get started.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((row) => (
+            <div
+              key={row.id}
+              className="group flex flex-col gap-3 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold leading-snug">{row.name}</p>
+                  {(row.brand || row.model) ? (
+                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                      {[row.brand, row.model].filter(Boolean).join(" ")}
+                    </p>
+                  ) : null}
+                </div>
+                {row.condition ? (
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${CONDITION_COLORS[row.condition] ?? "bg-muted text-muted-foreground"}`}
+                  >
+                    {CONDITION_LABELS[
+                      row.condition as keyof typeof CONDITION_LABELS
+                    ] ?? row.condition}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                {row.categories?.name ? (
+                  <span className="flex items-center gap-1">
+                    <Tag size={13} />
+                    {row.categories.name}
+                  </span>
+                ) : null}
+                {row.weight != null ? (
+                  <span className="flex items-center gap-1">
+                    <Scale size={13} />
+                    {row.weight} kg
+                  </span>
+                ) : null}
+              </div>
+
+              {row.notes ? (
+                <p className="line-clamp-2 text-sm text-muted-foreground/80">
+                  {row.notes}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add gear form */}
       <Card>
         <CardHeader>
-          <CardTitle>Add gear</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Plus size={18} />
+            Add gear
+          </CardTitle>
           <CardDescription>
             {categories.length === 0
               ? "Add rows to the categories table in Supabase to enable the category dropdown."
-              : "Save a new item to your list."}
+              : "Save a new item to your inventory."}
           </CardDescription>
         </CardHeader>
         <form
@@ -371,14 +444,14 @@ export function GearClient({
             </FieldSet>
 
             {formError ? (
-              <p className="text-sm text-destructive" role="alert">
+              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
                 {formError}
               </p>
             ) : null}
           </CardContent>
           <CardFooter className="justify-end border-t-0 pt-0">
             <Button type="submit" disabled={submitting || categories.length === 0}>
-              {submitting ? "Saving…" : "Add item"}
+              {submitting ? "Saving..." : "Add item"}
             </Button>
           </CardFooter>
         </form>

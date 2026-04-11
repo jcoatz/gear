@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Backpack } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -80,10 +81,17 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>{mode === "sign-in" ? "Sign in" : "Create account"}</CardTitle>
+      <CardHeader className="items-center text-center">
+        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <Backpack size={24} strokeWidth={1.5} />
+        </div>
+        <CardTitle className="text-xl">
+          {mode === "sign-in" ? "Welcome back" : "Create account"}
+        </CardTitle>
         <CardDescription>
-          Use the same email and password you use in Supabase Auth.
+          {mode === "sign-in"
+            ? "Sign in to access your gear inventory."
+            : "Create an account to start tracking your gear."}
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -117,18 +125,18 @@ export function LoginForm({ nextPath }: LoginFormProps) {
                   minLength={6}
                 />
                 <FieldDescription>
-                  At least 6 characters (or your project&apos;s minimum).
+                  At least 6 characters.
                 </FieldDescription>
               </FieldContent>
             </Field>
           </FieldSet>
           {error ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
               {error}
             </p>
           ) : null}
           {info ? (
-            <p className="text-sm text-muted-foreground" role="status">
+            <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary" role="status">
               {info}
             </p>
           ) : null}
@@ -136,7 +144,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
           <Button type="submit" disabled={loading}>
             {loading
-              ? "Please wait…"
+              ? "Please wait..."
               : mode === "sign-in"
                 ? "Sign in"
                 : "Sign up"}
