@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/toast";
 import { createTrip, deleteTrip } from "./actions";
 
 type TripItemRow = {
@@ -49,6 +50,7 @@ function getTripWeight(items: TripItemRow[] | null): number {
 
 export function TripsClient({ trips }: TripsClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -58,6 +60,7 @@ export function TripsClient({ trips }: TripsClientProps) {
   const [targetWeight, setTargetWeight] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function handleCreate() {
     if (!name.trim()) return;
@@ -79,6 +82,7 @@ export function TripsClient({ trips }: TripsClientProps) {
       setEndDate("");
       setTargetWeight("");
       setShowForm(false);
+      toast("Trip created");
       router.refresh();
     } else {
       setError(result.message);
@@ -89,6 +93,8 @@ export function TripsClient({ trips }: TripsClientProps) {
     setDeletingId(id);
     await deleteTrip(id);
     setDeletingId(null);
+    setConfirmDeleteId(null);
+    toast("Trip deleted");
     router.refresh();
   }
 
@@ -240,22 +246,42 @@ export function TripsClient({ trips }: TripsClientProps) {
                 className="group relative flex flex-col gap-3 rounded-xl border border-g-border bg-g-card p-5 backdrop-blur-md transition-all hover:border-g-border-active hover:shadow-lg hover:shadow-amber-500/5"
               >
                 {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDelete(trip.id);
-                  }}
-                  disabled={deletingId === trip.id}
-                  className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-lg text-g-text-4 opacity-0 transition-all hover:bg-g-error-bg hover:text-g-error-text group-hover:opacity-100"
-                >
-                  {deletingId === trip.id ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
+                {confirmDeleteId === trip.id ? (
+                  <div
+                    className="absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-lg border border-g-error-border bg-g-error-bg px-2.5 py-1.5"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  >
+                    <span className="text-xs text-g-error-text font-medium">Delete?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(trip.id)}
+                      disabled={deletingId === trip.id}
+                      className="flex items-center gap-0.5 rounded-md bg-red-500/20 px-2 py-0.5 text-[11px] font-medium text-red-400 hover:bg-red-500/30 disabled:opacity-50"
+                    >
+                      {deletingId === trip.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="rounded-md px-2 py-0.5 text-[11px] text-g-text-3 hover:text-g-text-2"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirmDeleteId(trip.id);
+                    }}
+                    className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-lg text-g-text-4 opacity-0 transition-all hover:bg-g-error-bg hover:text-g-error-text group-hover:opacity-100"
+                  >
                     <Trash2 size={12} />
-                  )}
-                </button>
+                  </button>
+                )}
 
                 <div>
                   <h3 className="font-semibold text-g-text">{trip.name}</h3>

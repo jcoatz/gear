@@ -4,9 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   Backpack,
+  Check,
+  Copy,
   DollarSign,
   Heart,
   LayoutGrid,
+  Loader2,
   Package,
   Plus,
   Scale,
@@ -17,7 +20,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { addGearItem, toggleWishlist } from "./actions";
+import { useToast } from "@/components/toast";
+import { addGearItem, duplicateGearItem, quickUpdateField, toggleWishlist } from "./actions";
 import { POPULAR_BRANDS } from "./catalog";
 import { GearDetailOverlay } from "./detail/gear-detail-overlay";
 import { getGearIcon } from "./gear-icons";
@@ -68,7 +72,7 @@ const CONDITION_DOTS: Record<string, string> = {
   poor: "bg-red-400 shadow-red-400/50",
 };
 
-/* ── Grid card with tilt + wishlist + inline edit ── */
+/* ── Grid card with tilt + wishlist + inline edit + quick actions ── */
 function GearGridCard({
   item,
   onClick,
@@ -78,16 +82,43 @@ function GearGridCard({
 }) {
   const { ref, style, glowX, glowY, hovering, handlers } = useCardTilt(10, 1.03);
   const router = useRouter();
+  const { toast } = useToast();
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
   const conditionDot = item.condition ? CONDITION_DOTS[item.condition] ?? "" : "";
   const conditionLabel = item.condition
     ? CONDITION_LABELS[item.condition as keyof typeof CONDITION_LABELS] ?? item.condition
     : null;
+  const [editingWeight, setEditingWeight] = useState(false);
+  const [weightDraft, setWeightDraft] = useState(item.weight?.toString() ?? "");
+  const [savingWeight, setSavingWeight] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   async function handleWishlistToggle(e: React.MouseEvent) {
     e.stopPropagation();
     await toggleWishlist(item.id, !item.wishlist);
     router.refresh();
+  }
+
+  async function handleSaveWeight() {
+    setSavingWeight(true);
+    const result = await quickUpdateField(item.id, "weight", weightDraft);
+    setSavingWeight(false);
+    if (result.ok) {
+      toast("Weight updated");
+      setEditingWeight(false);
+      router.refresh();
+    }
+  }
+
+  async function handleDuplicate(e: React.MouseEvent) {
+    e.stopPropagation();
+    setDuplicating(true);
+    const result = await duplicateGearItem(item.id);
+    setDuplicating(false);
+    if (result.ok) {
+      toast("Item duplicated");
+      router.refresh();
+    }
   }
 
   return (
@@ -202,6 +233,69 @@ function GearGridCard({
               </span>
             ) : null}
           </div>
+
+          {/* Quick actions bar (visible on hover) */}
+          <div className="flex items-center gap-1 pt-1 opacity-0 transition-opacity group-hover/card:opacity-100">
+            {editingWeight ? (
+              <div
+                className="flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Scale size={10} className="text-g-text-3" />
+                <input
+                  autoFocus
+                  value={weightDraft}
+                  onChange={(e) => setWeightDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") handleSaveWeight();
+                    if (e.key === "Escape") setEditingWeight(false);
+                  }}
+                  placeholder="kg"
+                  className="h-6 w-16 rounded border border-g-input-border bg-g-input px-1.5 text-xs text-g-text focus:border-g-border-active focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveWeight}
+                  disabled={savingWeight}
+                  className="flex h-6 w-6 items-center justify-center rounded text-emerald-400 hover:bg-emerald-500/15"
+                >
+                  {savingWeight ? <Loader2 size={10} className="animate-spin" /> : <Check size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingWeight(false)}
+                  className="flex h-6 w-6 items-center justify-center rounded text-g-text-4 hover:text-g-text-2"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWeightDraft(item.weight?.toString() ?? "");
+                    setEditingWeight(true);
+                  }}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-g-text-4 transition-colors hover:bg-g-raised hover:text-g-text-2"
+                >
+                  <Scale size={10} />
+                  Weight
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDuplicate}
+                  disabled={duplicating}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-g-text-4 transition-colors hover:bg-g-raised hover:text-g-text-2 disabled:opacity-50"
+                >
+                  {duplicating ? <Loader2 size={10} className="animate-spin" /> : <Copy size={10} />}
+                  Duplicate
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -216,6 +310,7 @@ export function GearClient({
   loadError,
 }: GearClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState<"grid" | "room">("grid");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -520,6 +615,7 @@ export function GearClient({
                       condition: values.condition,
                     });
                     setShowAddForm(false);
+                    toast("Gear item added");
                     router.refresh();
                   } finally {
                     setSubmitting(false);

@@ -8,19 +8,35 @@ export type ActionResult =
   | { ok: true }
   | { ok: false; message: string };
 
-export type CreateTripResult =
+export type BagResult =
   | { ok: true; id: string }
   | { ok: false; message: string };
 
-export async function createTrip(input: {
+const BAG_TYPES = [
+  "backpack",
+  "daypack",
+  "duffel",
+  "stuff_sack",
+  "dry_bag",
+  "hip_pack",
+  "other",
+] as const;
+
+export type BagType = (typeof BAG_TYPES)[number];
+
+export async function createBag(input: {
   name: string;
-  description?: string;
-  start_date?: string;
-  end_date?: string;
-  target_weight_kg?: number;
-}): Promise<CreateTripResult> {
+  brand?: string;
+  model?: string;
+  color?: string;
+  volume_liters?: number;
+  max_weight_kg?: number;
+  own_weight_kg?: number;
+  bag_type?: string;
+  notes?: string;
+}): Promise<BagResult> {
   if (!input.name?.trim()) {
-    return { ok: false, message: "Trip name is required." };
+    return { ok: false, message: "Bag name is required." };
   }
 
   const cookieStore = await cookies();
@@ -28,40 +44,44 @@ export async function createTrip(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { ok: false, message: "You must be signed in." };
-  }
+  if (!user) return { ok: false, message: "You must be signed in." };
 
   const { data, error } = await supabase
-    .from("trips")
+    .from("bags")
     .insert({
       user_id: user.id,
       name: input.name.trim(),
-      description: input.description?.trim() || null,
-      start_date: input.start_date || null,
-      end_date: input.end_date || null,
-      target_weight_kg: input.target_weight_kg ?? null,
+      brand: input.brand?.trim() || null,
+      model: input.model?.trim() || null,
+      color: input.color?.trim() || null,
+      volume_liters: input.volume_liters ?? null,
+      max_weight_kg: input.max_weight_kg ?? null,
+      own_weight_kg: input.own_weight_kg ?? null,
+      bag_type: BAG_TYPES.includes(input.bag_type as BagType) ? input.bag_type : "backpack",
+      notes: input.notes?.trim() || null,
     })
     .select("id")
     .single();
 
-  if (error) {
-    return { ok: false, message: error.message };
-  }
+  if (error) return { ok: false, message: error.message };
 
+  revalidatePath("/gear");
   revalidatePath("/trips");
   return { ok: true, id: data.id };
 }
 
-export async function updateTrip(
+export async function updateBag(
   id: string,
   input: {
     name?: string;
-    description?: string;
-    start_date?: string | null;
-    end_date?: string | null;
-    target_weight_kg?: number | null;
+    brand?: string;
+    model?: string;
+    color?: string;
+    volume_liters?: number | null;
+    max_weight_kg?: number | null;
+    own_weight_kg?: number | null;
+    bag_type?: string;
+    notes?: string;
   },
 ): Promise<ActionResult> {
   const cookieStore = await cookies();
@@ -69,88 +89,75 @@ export async function updateTrip(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { ok: false, message: "You must be signed in." };
 
   const updates: Record<string, unknown> = {};
   if (input.name !== undefined) updates.name = input.name.trim();
-  if (input.description !== undefined) updates.description = input.description?.trim() || null;
-  if (input.start_date !== undefined) updates.start_date = input.start_date || null;
-  if (input.end_date !== undefined) updates.end_date = input.end_date || null;
-  if (input.target_weight_kg !== undefined) updates.target_weight_kg = input.target_weight_kg;
+  if (input.brand !== undefined) updates.brand = input.brand?.trim() || null;
+  if (input.model !== undefined) updates.model = input.model?.trim() || null;
+  if (input.color !== undefined) updates.color = input.color?.trim() || null;
+  if (input.volume_liters !== undefined) updates.volume_liters = input.volume_liters;
+  if (input.max_weight_kg !== undefined) updates.max_weight_kg = input.max_weight_kg;
+  if (input.own_weight_kg !== undefined) updates.own_weight_kg = input.own_weight_kg;
+  if (input.bag_type !== undefined && BAG_TYPES.includes(input.bag_type as BagType)) {
+    updates.bag_type = input.bag_type;
+  }
+  if (input.notes !== undefined) updates.notes = input.notes?.trim() || null;
 
   const { error } = await supabase
-    .from("trips")
+    .from("bags")
     .update(updates)
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) return { ok: false, message: error.message };
 
+  revalidatePath("/gear");
   revalidatePath("/trips");
-  revalidatePath(`/trips/${id}`);
   return { ok: true };
 }
 
-export async function deleteTrip(id: string): Promise<ActionResult> {
+export async function deleteBag(id: string): Promise<ActionResult> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { ok: false, message: "You must be signed in." };
 
   const { error } = await supabase
-    .from("trips")
+    .from("bags")
     .delete()
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) return { ok: false, message: error.message };
 
+  revalidatePath("/gear");
   revalidatePath("/trips");
   return { ok: true };
 }
 
-export async function addItemToTrip(
+// Trip bag assignment actions
+
+export async function addBagToTrip(
   tripId: string,
-  gearItemId: string,
+  bagId: string,
 ): Promise<ActionResult> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { ok: false, message: "You must be signed in." };
 
-  // Verify trip ownership
-  const { data: trip } = await supabase
-    .from("trips")
-    .select("id")
-    .eq("id", tripId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!trip) return { ok: false, message: "Trip not found." };
-
-  // Get next sort order
-  const { count } = await supabase
-    .from("trip_items")
-    .select("*", { count: "exact", head: true })
-    .eq("trip_id", tripId);
-
-  const { error } = await supabase.from("trip_items").insert({
+  const { error } = await supabase.from("trip_bags").insert({
     trip_id: tripId,
-    gear_item_id: gearItemId,
-    sort_order: (count ?? 0) + 1,
+    bag_id: bagId,
   });
 
   if (error) {
-    if (error.code === "23505") {
-      return { ok: false, message: "Item already in trip." };
-    }
+    if (error.code === "23505") return { ok: false, message: "Bag already added." };
     return { ok: false, message: error.message };
   }
 
@@ -158,23 +165,29 @@ export async function addItemToTrip(
   return { ok: true };
 }
 
-export async function removeItemFromTrip(
+export async function removeBagFromTrip(
   tripId: string,
-  gearItemId: string,
+  bagId: string,
 ): Promise<ActionResult> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { ok: false, message: "You must be signed in." };
 
-  const { error } = await supabase
+  // Unassign items from this bag first
+  await supabase
     .from("trip_items")
+    .update({ bag_id: null })
+    .eq("trip_id", tripId)
+    .eq("bag_id", bagId);
+
+  const { error } = await supabase
+    .from("trip_bags")
     .delete()
     .eq("trip_id", tripId)
-    .eq("gear_item_id", gearItemId);
+    .eq("bag_id", bagId);
 
   if (error) return { ok: false, message: error.message };
 
@@ -182,57 +195,20 @@ export async function removeItemFromTrip(
   return { ok: true };
 }
 
-export async function reorderTripItems(
-  tripId: string,
-  orderedIds: string[],
-): Promise<ActionResult> {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return { ok: false, message: "You must be signed in." };
-
-  // Verify trip ownership
-  const { data: trip } = await supabase
-    .from("trips")
-    .select("id")
-    .eq("id", tripId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!trip) return { ok: false, message: "Trip not found." };
-
-  // Update sort_order for each item
-  const updates = orderedIds.map((id, index) =>
-    supabase
-      .from("trip_items")
-      .update({ sort_order: index })
-      .eq("id", id)
-      .eq("trip_id", tripId),
-  );
-
-  await Promise.all(updates);
-
-  return { ok: true };
-}
-
-export async function togglePacked(
+export async function assignItemToBag(
   tripItemId: string,
-  packed: boolean,
+  bagId: string | null,
 ): Promise<ActionResult> {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return { ok: false, message: "You must be signed in." };
 
   const { error } = await supabase
     .from("trip_items")
-    .update({ packed })
+    .update({ bag_id: bagId })
     .eq("id", tripItemId);
 
   if (error) return { ok: false, message: error.message };

@@ -31,12 +31,14 @@ export default async function TripDetailPage({
 
   if (!trip) notFound();
 
-  // Fetch trip items, all gear, user activities, and past trip frequency in parallel
+  // Fetch trip items, all gear, user activities, past trip frequency, and bags in parallel
   const [
     { data: tripItems },
     { data: allGear },
     { data: userActivities },
     { data: otherTripItems },
+    { data: userBags },
+    { data: tripBagLinks },
   ] = await Promise.all([
     supabase
       .from("trip_items")
@@ -45,6 +47,7 @@ export default async function TripDetailPage({
         gear_item_id,
         packed,
         sort_order,
+        bag_id,
         gear_items:gear_item_id (
           id, name, brand, model, condition, weight, category_id,
           categories ( name )
@@ -66,6 +69,15 @@ export default async function TripDetailPage({
       .from("trip_items")
       .select("gear_item_id")
       .neq("trip_id", id),
+    supabase
+      .from("bags")
+      .select("id, name, brand, model, color, volume_liters, max_weight_kg, own_weight_kg, bag_type")
+      .eq("user_id", user.id)
+      .order("created_at"),
+    supabase
+      .from("trip_bags")
+      .select("bag_id")
+      .eq("trip_id", id),
   ]);
 
   // Normalize
@@ -83,6 +95,7 @@ export default async function TripDetailPage({
       gearItemId: ti.gear_item_id,
       packed: ti.packed,
       sortOrder: ti.sort_order,
+      bagId: ti.bag_id ?? null,
       name: gear?.name ?? "Unknown",
       brand: gear?.brand ?? null,
       model: gear?.model ?? null,
@@ -130,6 +143,8 @@ export default async function TripDetailPage({
         allGear={normalizedGear}
         userActivities={activityMap}
         pastFrequency={pastFrequency}
+        userBags={userBags ?? []}
+        tripBagIds={(tripBagLinks ?? []).map((tb) => tb.bag_id)}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Backpack, LayoutDashboard, Map, LogOut, Zap } from "lucide-react";
+import { Backpack, Briefcase, LayoutDashboard, Map, LogOut, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -13,6 +13,7 @@ type NavBarProps = {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/gear", label: "Gear", icon: Backpack },
+  { href: "/bags", label: "Bags", icon: Briefcase },
   { href: "/trips", label: "Trips", icon: Map },
   { href: "/activities", label: "Activities", icon: Zap },
 ];

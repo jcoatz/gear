@@ -2,11 +2,19 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Backpack,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Circle,
+  GripVertical,
   Scale,
   Trash2,
 } from "lucide-react";
@@ -21,6 +29,7 @@ type TripBagProps = {
   targetWeight: number | null;
   onTogglePacked: (tripItemId: string, packed: boolean) => void;
   onRemove: (gearItemId: string) => void;
+  onReorder: (orderedIds: string[]) => void;
 };
 
 type CategoryGroup = {
@@ -53,6 +62,7 @@ export function TripBag({
   targetWeight,
   onTogglePacked,
   onRemove,
+  onReorder,
 }: TripBagProps) {
   const { setNodeRef, isOver } = useDroppable({ id: "trip-bag" });
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -221,16 +231,21 @@ export function TripBag({
 
                 {/* Category items */}
                 {!isCollapsed ? (
-                  <div className="flex flex-col gap-1 px-3 pb-2">
-                    {group.items.map((item) => (
-                      <BagItem
-                        key={item.tripItemId}
-                        item={item}
-                        onTogglePacked={onTogglePacked}
-                        onRemove={onRemove}
-                      />
-                    ))}
-                  </div>
+                  <SortableContext
+                    items={group.items.map((i) => i.tripItemId)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="flex flex-col gap-1 px-3 pb-2">
+                      {group.items.map((item) => (
+                        <SortableBagItem
+                          key={item.tripItemId}
+                          item={item}
+                          onTogglePacked={onTogglePacked}
+                          onRemove={onRemove}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
                 ) : null}
               </div>
             );
@@ -253,7 +268,7 @@ export function TripBag({
 
 /* ── Individual bag item ── */
 
-function BagItem({
+function SortableBagItem({
   item,
   onTogglePacked,
   onRemove,
@@ -262,16 +277,64 @@ function BagItem({
   onTogglePacked: (tripItemId: string, packed: boolean) => void;
   onRemove: (gearItemId: string) => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.tripItemId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <BagItem
+        item={item}
+        onTogglePacked={onTogglePacked}
+        onRemove={onRemove}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+function BagItem({
+  item,
+  onTogglePacked,
+  onRemove,
+  dragHandleProps,
+}: {
+  item: TripItemData;
+  onTogglePacked: (tripItemId: string, packed: boolean) => void;
+  onRemove: (gearItemId: string) => void;
+  dragHandleProps?: Record<string, unknown>;
+}) {
   const Icon = getGearIcon(item.name, item.brand, item.categoryName);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all ${
+      className={`flex items-center gap-2 rounded-lg border px-2 py-2.5 transition-all ${
         item.packed
           ? "border-emerald-500/20 bg-emerald-500/[0.05]"
           : "border-g-border bg-g-raised"
       }`}
     >
+      {/* Drag handle */}
+      <button
+        type="button"
+        className="shrink-0 cursor-grab touch-none text-g-text-4 hover:text-g-text-3 active:cursor-grabbing"
+        {...dragHandleProps}
+      >
+        <GripVertical size={14} />
+      </button>
+
       {/* Pack toggle */}
       <button
         type="button"
@@ -308,14 +371,33 @@ function BagItem({
         </div>
       </div>
 
-      {/* Remove */}
-      <button
-        type="button"
-        onClick={() => onRemove(item.gearItemId)}
-        className="shrink-0 text-g-text-4 transition-colors hover:text-g-error-text"
-      >
-        <Trash2 size={14} />
-      </button>
+      {/* Remove with confirm */}
+      {confirmRemove ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => onRemove(item.gearItemId)}
+            className="rounded-md bg-red-500/20 px-2 py-0.5 text-[11px] font-medium text-red-400 hover:bg-red-500/30"
+          >
+            Remove
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmRemove(false)}
+            className="rounded-md px-1.5 py-0.5 text-[11px] text-g-text-4 hover:text-g-text-2"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirmRemove(true)}
+          className="shrink-0 text-g-text-4 transition-colors hover:text-g-error-text"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }

@@ -356,3 +356,63 @@ export async function quickAddGearItem(
   revalidatePath("/activities");
   return { ok: true };
 }
+
+export async function quickUpdateField(
+  id: string,
+  field: "weight" | "price" | "name" | "brand",
+  value: string,
+): Promise<ActionResult> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "You must be signed in." };
+
+  let dbValue: string | number | null = value.trim() || null;
+  if ((field === "weight" || field === "price") && dbValue != null) {
+    const n = Number(dbValue);
+    if (Number.isNaN(n)) return { ok: false, message: `${field} must be a number.` };
+    dbValue = n;
+  }
+
+  const { error } = await supabase
+    .from("gear_items")
+    .update({ [field]: dbValue })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/gear");
+  return { ok: true };
+}
+
+export async function duplicateGearItem(id: string): Promise<ActionResult> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "You must be signed in." };
+
+  const { data: original } = await supabase
+    .from("gear_items")
+    .select("name, brand, model, condition, weight, price, notes, tags, category_id, wishlist")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!original) return { ok: false, message: "Item not found." };
+
+  const { error } = await supabase.from("gear_items").insert({
+    ...original,
+    user_id: user.id,
+    name: `${original.name} (copy)`,
+  });
+
+  if (error) return { ok: false, message: error.message };
+
+  revalidatePath("/gear");
+  return { ok: true };
+}
