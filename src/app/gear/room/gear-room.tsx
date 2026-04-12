@@ -1,21 +1,20 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Backpack,
-  Flame,
-  Shirt,
-  Compass,
-  ShieldAlert,
-  Moon,
-  Package,
-  Tent,
+  Lamp,
   Scale,
+  Shirt,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { getGearIcon } from "../gear-icons";
 import { CONDITION_LABELS } from "../schema";
 import type { CategoryRow, GearItemRow } from "../gear-client";
-import { useCardTilt } from "./use-card-tilt";
+
+/* ═══════════════════════════════════════════════
+   Props & Types
+   ═══════════════════════════════════════════════ */
 
 type GearRoomProps = {
   items: GearItemRow[];
@@ -23,8 +22,13 @@ type GearRoomProps = {
   onSelectItem: (item: GearItemRow) => void;
 };
 
-/* ── Category → furniture zone mapping ── */
-type ZoneId = "pegboard" | "shelves" | "wardrobe" | "floor" | "workbench" | "nightstand";
+type ZoneId =
+  | "pegboard"
+  | "shelves"
+  | "wardrobe"
+  | "floor"
+  | "workbench"
+  | "nightstand";
 
 const CATEGORY_ZONE: Record<string, ZoneId> = {
   Safety: "pegboard",
@@ -36,27 +40,148 @@ const CATEGORY_ZONE: Record<string, ZoneId> = {
   Other: "workbench",
 };
 
-const ZONE_ORDER: ZoneId[] = ["pegboard", "wardrobe", "shelves", "nightstand", "workbench", "floor"];
+const ZONE_ORDER: ZoneId[] = [
+  "pegboard",
+  "wardrobe",
+  "shelves",
+  "nightstand",
+  "workbench",
+  "floor",
+];
 
-const ZONE_META: Record<
-  ZoneId,
-  { label: string; description: string }
-> = {
-  pegboard: { label: "Pegboard Wall", description: "Safety & navigation gear" },
-  shelves: { label: "Kitchen Shelf", description: "Cooking & food prep" },
-  wardrobe: { label: "Wardrobe", description: "Clothing & layers" },
-  floor: { label: "Gear Corner", description: "Tents, shelters & big items" },
-  workbench: { label: "Workbench", description: "Tools & accessories" },
-  nightstand: { label: "Sleep Station", description: "Bags, pads & pillows" },
+const CONDITION_COLORS: Record<string, string> = {
+  new: "#34d399",
+  like_new: "#2dd4bf",
+  good: "#38bdf8",
+  fair: "#fbbf24",
+  poor: "#f87171",
 };
 
-const CONDITION_DOTS: Record<string, string> = {
-  new: "bg-emerald-400",
-  like_new: "bg-teal-400",
-  good: "bg-sky-400",
-  fair: "bg-amber-400",
-  poor: "bg-red-400",
+/* ═══════════════════════════════════════════════
+   Stagger animation helpers
+   ═══════════════════════════════════════════════ */
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.04, delayChildren: 0.1 },
+  },
 };
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16, scale: 0.92 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 400, damping: 28 },
+  },
+};
+
+/* Deterministic pseudo-random from item id for organic placement */
+function seededRand(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return ((hash & 0x7fffffff) % 1000) / 1000;
+}
+
+/* ═══════════════════════════════════════════════
+   Hover Tooltip
+   ═══════════════════════════════════════════════ */
+
+function ItemTooltip({ item }: { item: GearItemRow }) {
+  const condLabel = item.condition
+    ? CONDITION_LABELS[item.condition as keyof typeof CONDITION_LABELS]
+    : null;
+  const condColor = item.condition ? CONDITION_COLORS[item.condition] : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 4, scale: 0.97 }}
+      transition={{ duration: 0.15 }}
+      className="pointer-events-none absolute -top-2 left-1/2 z-50 -translate-x-1/2 -translate-y-full whitespace-nowrap"
+    >
+      <div className="rounded-lg border border-g-border bg-g-card px-3 py-2 shadow-xl shadow-black/20 backdrop-blur-md">
+        <p className="text-sm font-semibold text-g-text">{item.name}</p>
+        <div className="mt-1 flex items-center gap-3 text-xs text-g-text-3">
+          {item.brand ? <span>{item.brand}</span> : null}
+          {item.weight != null ? (
+            <span className="flex items-center gap-1">
+              <Scale size={10} />
+              {item.weight} kg
+            </span>
+          ) : null}
+          {condLabel ? (
+            <span className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: condColor ?? undefined }}
+              />
+              {condLabel}
+            </span>
+          ) : null}
+          {item.price != null ? (
+            <span className="text-emerald-500">${item.price}</span>
+          ) : null}
+        </div>
+      </div>
+      {/* Arrow */}
+      <div className="mx-auto h-2 w-2 -translate-y-px rotate-45 border-b border-r border-g-border bg-g-card" />
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Interactive Item Wrapper
+   ═══════════════════════════════════════════════ */
+
+function RoomItem({
+  item,
+  onClick,
+  children,
+  className = "",
+  liftDistance = -10,
+}: {
+  item: GearItemRow;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+  liftDistance?: number;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      variants={itemVariants}
+      className={`relative cursor-pointer ${className}`}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      onClick={onClick}
+      whileHover={{ y: liftDistance, transition: { type: "spring", stiffness: 500, damping: 25 } }}
+    >
+      <AnimatePresence>{hovered ? <ItemTooltip item={item} /> : null}</AnimatePresence>
+      {children}
+      {/* Drop shadow that grows on hover */}
+      <motion.div
+        className="pointer-events-none absolute inset-x-1 -bottom-1 h-3 rounded-full bg-black/10 blur-sm dark:bg-black/25"
+        animate={{
+          scaleX: hovered ? 1.15 : 0.9,
+          opacity: hovered ? 0.7 : 0.3,
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      />
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Main GearRoom
+   ═══════════════════════════════════════════════ */
 
 export function GearRoom({ items, categories, onSelectItem }: GearRoomProps) {
   const zones = useMemo(() => {
@@ -77,75 +202,102 @@ export function GearRoom({ items, categories, onSelectItem }: GearRoomProps) {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-g-raised">
             <Backpack size={32} className="text-g-text-3" />
           </div>
-          <div>
-            <p className="font-medium text-g-text-2">Your gear room is empty</p>
-            <p className="mt-1 text-sm text-g-text-3">
-              Add some gear to see it displayed here.
-            </p>
-          </div>
+          <p className="font-medium text-g-text-2">Your gear room is empty</p>
+          <p className="mt-1 text-sm text-g-text-3">
+            Add some gear to see it displayed here.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-g-border bg-gradient-to-b from-g-card to-g-page">
-      {/* Room scene */}
-      <div className="relative">
-        {/* Wall texture — subtle dot grid */}
+    <div className="relative overflow-hidden rounded-2xl border border-g-border">
+      {/* ── Room shell ── */}
+      <div className="relative min-h-[600px]">
+        {/* Back wall */}
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-30 dark:opacity-20"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle, var(--g-dot) 1px, transparent 1px)`,
-            backgroundSize: "20px 20px",
+            background: `
+              linear-gradient(180deg,
+                var(--g-card) 0%,
+                color-mix(in oklch, var(--g-page), transparent 20%) 70%,
+                color-mix(in oklch, var(--g-page), transparent 5%) 100%
+              )`,
           }}
         />
 
-        <div className="relative flex flex-col gap-0">
-          {/* ── Upper wall: Pegboard + Wardrobe side by side ── */}
-          <div className="grid gap-0 lg:grid-cols-2">
-            <PegboardZone
-              items={zones.get("pegboard")!}
-              onSelectItem={onSelectItem}
-            />
-            <WardrobeZone
-              items={zones.get("wardrobe")!}
-              onSelectItem={onSelectItem}
-            />
-          </div>
+        {/* Wall texture — subtle plaster/paper grain */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.035] dark:opacity-[0.04]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23888' fill-opacity='1'%3E%3Cpath d='M5 0h1L0 5V4zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
 
-          {/* ── Mid wall: Shelves + Nightstand ── */}
-          <div className="grid gap-0 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ShelfZone
-                items={zones.get("shelves")!}
-                onSelectItem={onSelectItem}
-              />
-            </div>
-            <NightstandZone
-              items={zones.get("nightstand")!}
-              onSelectItem={onSelectItem}
-            />
-          </div>
+        {/* Ambient window light from left side */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 top-0 h-full w-[400px] opacity-[0.07] dark:opacity-[0.04]"
+          style={{
+            background:
+              "radial-gradient(ellipse at 0% 30%, rgba(255,220,150,1) 0%, transparent 70%)",
+          }}
+        />
 
-          {/* ── Floor level: Workbench + Floor corner ── */}
-          <div className="grid gap-0 lg:grid-cols-2">
-            <WorkbenchZone
-              items={zones.get("workbench")!}
-              onSelectItem={onSelectItem}
-            />
-            <FloorZone
-              items={zones.get("floor")!}
-              onSelectItem={onSelectItem}
-            />
+        {/* ── Upper row: Pegboard + Wardrobe ── */}
+        <div className="relative grid gap-0 lg:grid-cols-2">
+          <PegboardZone items={zones.get("pegboard")!} onSelectItem={onSelectItem} />
+          <WardrobeZone items={zones.get("wardrobe")!} onSelectItem={onSelectItem} />
+        </div>
+
+        {/* Wall/shelf divider line */}
+        <div className="relative mx-6 h-px bg-gradient-to-r from-transparent via-g-border to-transparent" />
+
+        {/* ── Middle row: Shelves + Nightstand ── */}
+        <div className="relative grid gap-0 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <ShelfUnit items={zones.get("shelves")!} onSelectItem={onSelectItem} />
+          </div>
+          <div className="lg:col-span-2">
+            <NightstandZone items={zones.get("nightstand")!} onSelectItem={onSelectItem} />
           </div>
         </div>
 
-        {/* Floor gradient */}
+        {/* ── Floor line ── */}
+        <div className="relative mx-4">
+          <div className="h-[2px] bg-gradient-to-r from-amber-800/20 via-amber-700/30 to-amber-800/20 dark:from-amber-800/10 dark:via-amber-700/15 dark:to-amber-800/10" />
+        </div>
+
+        {/* ── Floor row: Workbench + Floor corner ── */}
+        <div className="relative grid gap-0 lg:grid-cols-2">
+          <WorkbenchZone items={zones.get("workbench")!} onSelectItem={onSelectItem} />
+          <FloorZone items={zones.get("floor")!} onSelectItem={onSelectItem} />
+        </div>
+
+        {/* Wooden floor */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-amber-900/10 dark:from-amber-900/5 to-transparent"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-32"
+          style={{
+            background: `
+              repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 119px,
+                rgba(139,90,43,0.06) 119px,
+                rgba(139,90,43,0.06) 120px
+              ),
+              linear-gradient(
+                180deg,
+                transparent 0%,
+                rgba(139,90,43,0.04) 30%,
+                rgba(139,90,43,0.08) 100%
+              )
+            `,
+          }}
         />
       </div>
     </div>
@@ -153,24 +305,9 @@ export function GearRoom({ items, categories, onSelectItem }: GearRoomProps) {
 }
 
 /* ═══════════════════════════════════════════════
-   Individual Zone Components
+   PEGBOARD ZONE
    ═══════════════════════════════════════════════ */
 
-function ZoneLabel({ label, count }: { label: string; count: number }) {
-  if (count === 0) return null;
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <span className="text-xs font-semibold uppercase tracking-wider text-g-text-3">
-        {label}
-      </span>
-      <span className="rounded-full bg-g-raised px-1.5 py-0.5 text-[10px] text-g-text-4">
-        {count}
-      </span>
-    </div>
-  );
-}
-
-/* ── Pegboard: dotted background, items "hung" on hooks ── */
 function PegboardZone({
   items,
   onSelectItem,
@@ -178,56 +315,86 @@ function PegboardZone({
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
   return (
-    <div className="relative border-b border-r border-g-border/50 p-5">
-      {/* Pegboard holes */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-25"
-        style={{
-          backgroundImage: `radial-gradient(circle, var(--g-text-4, rgba(120,113,108,0.3)) 2px, transparent 2px)`,
-          backgroundSize: "28px 28px",
-          backgroundPosition: "14px 14px",
-        }}
-      />
-      <div className="relative">
-        <ZoneLabel label="Pegboard" count={items.length} />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div className="relative p-6">
+      {/* Zone label */}
+      <ZoneLabel icon="pegboard" label="Pegboard" count={items.length} />
+
+      {/* Pegboard panel */}
+      <div className="relative mt-3 min-h-[160px] overflow-hidden rounded-xl border border-amber-800/10 dark:border-amber-700/10">
+        {/* Board background — warm brown with hole grid */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(135deg,
+                rgba(180,130,70,0.08) 0%,
+                rgba(160,110,60,0.05) 50%,
+                rgba(180,130,70,0.08) 100%
+              )
+            `,
+          }}
+        />
+        {/* Pegboard holes */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.1) 3px, transparent 3px)`,
+            backgroundSize: "24px 24px",
+            backgroundPosition: "12px 12px",
+          }}
+        />
+
+        {/* Hung items */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative flex flex-wrap gap-x-2 gap-y-1 p-4 pt-2"
+        >
           {items.map((item) => (
-            <HungItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
+            <PegboardItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
 
-function HungItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
+function PegboardItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
+  const r = seededRand(String(item.id));
+  const hookLen = 10 + r * 8;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/hung flex flex-col items-center gap-1.5 rounded-lg p-3 transition-all hover:bg-white/[0.05] dark:hover:bg-white/[0.05]"
-    >
-      {/* Hook */}
-      <div className="h-3 w-0.5 rounded-full bg-g-text-4/50" />
-      {/* Item circle */}
-      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-g-border bg-g-card shadow-md transition-transform group-hover/hung:scale-110">
-        <Icon size={22} className="text-g-accent" />
+    <RoomItem item={item} onClick={onClick} liftDistance={-6} className="flex flex-col items-center px-2">
+      {/* Metal hook */}
+      <div className="flex flex-col items-center">
+        <div
+          className="w-[3px] rounded-b-full"
+          style={{
+            height: hookLen,
+            background: "linear-gradient(180deg, #94a3b8 0%, #64748b 100%)",
+          }}
+        />
+        <div className="h-[6px] w-[10px] rounded-b-full border-b-2 border-l-2 border-r-2 border-slate-400 dark:border-slate-500" />
       </div>
-      <p className="text-[11px] font-medium text-g-text-2 text-center leading-tight truncate max-w-full">
+      {/* Item body */}
+      <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-g-border/60 bg-g-card shadow-md transition-all">
+        <Icon size={24} className="text-g-accent" />
+      </div>
+      <span className="mt-1.5 max-w-[72px] truncate text-center text-[11px] font-medium text-g-text-2">
         {item.name}
-      </p>
-      {item.weight != null ? (
-        <span className="text-[9px] text-g-text-4">{item.weight} kg</span>
-      ) : null}
-    </button>
+      </span>
+    </RoomItem>
   );
 }
 
-/* ── Wardrobe: tall container with rail and hanging clothes ── */
+/* ═══════════════════════════════════════════════
+   WARDROBE ZONE
+   ═══════════════════════════════════════════════ */
+
 function WardrobeZone({
   items,
   onSelectItem,
@@ -235,22 +402,57 @@ function WardrobeZone({
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
   return (
-    <div className="relative border-b border-g-border/50 p-5">
-      <ZoneLabel label="Wardrobe" count={items.length} />
+    <div className="relative p-6">
+      <ZoneLabel icon="wardrobe" label="Wardrobe" count={items.length} />
+
       {/* Wardrobe frame */}
-      <div className="rounded-xl border border-g-border bg-g-card/30 overflow-hidden">
+      <div className="relative mt-3 min-h-[160px] overflow-hidden rounded-xl border-2 border-amber-800/15 dark:border-amber-700/10">
+        {/* Wood frame effect */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(180deg,
+                rgba(120,80,40,0.06) 0%,
+                rgba(100,65,30,0.02) 20%,
+                rgba(80,50,25,0.04) 100%
+              )
+            `,
+          }}
+        />
+
+        {/* Top shelf/molding */}
+        <div className="h-3 bg-gradient-to-b from-amber-800/10 to-transparent dark:from-amber-700/8" />
+
         {/* Rail */}
-        <div className="relative mx-4 mt-3 mb-1">
-          <div className="h-0.5 rounded-full bg-g-text-4/40" />
+        <div className="relative mx-5 mt-1 mb-2">
+          <div
+            className="h-[4px] rounded-full"
+            style={{
+              background: "linear-gradient(90deg, #94a3b8 0%, #cbd5e1 40%, #94a3b8 100%)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+            }}
+          />
+          {/* Rail brackets */}
+          <div className="absolute -top-1 left-4 h-3 w-[6px] rounded-b bg-slate-400/60" />
+          <div className="absolute -top-1 right-4 h-3 w-[6px] rounded-b bg-slate-400/60" />
         </div>
-        {/* Hanging items */}
-        <div className="flex flex-wrap gap-1 px-3 pb-4 pt-1">
+
+        {/* Hanging clothes */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative flex flex-wrap items-start gap-x-1 gap-y-2 px-4 pb-4"
+        >
           {items.map((item) => (
             <HangerItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
           ))}
-        </div>
+        </motion.div>
+
+        {/* Floor of wardrobe — darker */}
+        <div className="h-2 bg-gradient-to-t from-amber-900/8 to-transparent dark:from-amber-900/5" />
       </div>
     </div>
   );
@@ -258,59 +460,112 @@ function WardrobeZone({
 
 function HangerItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
-  const dot = item.condition ? CONDITION_DOTS[item.condition] ?? "" : "";
+  const condColor = item.condition ? CONDITION_COLORS[item.condition] : null;
+  const r = seededRand(String(item.id));
+  const rotation = (r - 0.5) * 4; // slight random tilt
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/hang flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-2 transition-all hover:bg-white/[0.05] dark:hover:bg-white/[0.05]"
-    >
-      {/* Hanger hook */}
-      <div className="flex flex-col items-center">
-        <div className="h-2 w-0.5 bg-g-text-4/40" />
-        <div className="h-1.5 w-4 rounded-b-full border-b border-l border-r border-g-text-4/40" />
-      </div>
+    <RoomItem item={item} onClick={onClick} liftDistance={-5} className="flex flex-col items-center">
+      {/* Hanger */}
+      <svg width="32" height="14" viewBox="0 0 32 14" className="text-slate-400 dark:text-slate-500">
+        <path
+          d="M16 0 L16 4 Q16 6 14 7 L4 12 Q2 13 2 11 L14 6 Q16 5 18 6 L30 11 Q30 13 28 12 L18 7 Q16 6 16 4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+
       {/* Garment */}
-      <div className="flex h-14 w-10 flex-col items-center justify-center rounded-b-lg border border-t-0 border-g-border/60 bg-g-card/50 transition-transform group-hover/hang:scale-105">
-        <Icon size={18} className="text-g-accent" />
-        {dot ? <div className={`mt-1 h-1.5 w-1.5 rounded-full ${dot}`} /> : null}
+      <div
+        className="flex h-[72px] w-[48px] flex-col items-center justify-center rounded-b-xl border border-t-0 border-g-border/50 bg-g-card/80 shadow-md transition-all"
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        <Icon size={20} className="text-g-accent" />
+        {condColor ? (
+          <div
+            className="mt-2 h-2 w-2 rounded-full"
+            style={{ backgroundColor: condColor }}
+          />
+        ) : null}
       </div>
-      <p className="mt-1 text-[10px] text-g-text-3 text-center leading-tight truncate max-w-[72px]">
+      <span className="mt-1.5 max-w-[56px] truncate text-center text-[10px] font-medium text-g-text-2">
         {item.name}
-      </p>
-    </button>
+      </span>
+    </RoomItem>
   );
 }
 
-/* ── Shelves: horizontal shelf lines with items sitting on them ── */
-function ShelfZone({
+/* ═══════════════════════════════════════════════
+   SHELF UNIT
+   ═══════════════════════════════════════════════ */
+
+function ShelfUnit({
   items,
   onSelectItem,
 }: {
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
-  // Split items across 2 shelves
+  // Distribute across 2 shelves
   const mid = Math.ceil(items.length / 2);
-  const shelves = [items.slice(0, mid), items.slice(mid)].filter((s) => s.length > 0);
+  const shelves = items.length > 0
+    ? [items.slice(0, mid), items.slice(mid)].filter((s) => s.length > 0)
+    : [];
 
   return (
-    <div className="relative border-b border-r border-g-border/50 p-5">
-      <ZoneLabel label="Kitchen Shelf" count={items.length} />
-      <div className="space-y-1">
-        {shelves.map((shelf, si) => (
-          <div key={si}>
-            {/* Items on shelf */}
-            <div className="flex flex-wrap gap-2 px-2 pb-1">
-              {shelf.map((item) => (
-                <ShelfItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
-              ))}
-            </div>
-            {/* Shelf plank */}
-            <div className="h-1.5 rounded-sm bg-gradient-to-b from-amber-800/20 to-amber-900/10 dark:from-amber-700/15 dark:to-amber-800/8 shadow-sm" />
+    <div className="relative p-6">
+      <ZoneLabel icon="shelf" label="Kitchen Shelf" count={items.length} />
+
+      {/* Shelf unit frame */}
+      <div className="relative mt-3 overflow-hidden rounded-xl border-2 border-amber-800/12 dark:border-amber-700/8">
+        {/* Side panels */}
+        <div className="absolute inset-y-0 left-0 w-[6px] bg-gradient-to-r from-amber-800/10 to-transparent dark:from-amber-700/6" />
+        <div className="absolute inset-y-0 right-0 w-[6px] bg-gradient-to-l from-amber-800/10 to-transparent dark:from-amber-700/6" />
+
+        {shelves.length === 0 ? (
+          <div className="flex items-center justify-center py-10 text-sm text-g-text-3">
+            Empty shelf
           </div>
-        ))}
+        ) : (
+          shelves.map((shelf, si) => (
+            <div key={si}>
+              {/* Items on this shelf */}
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="relative flex flex-wrap items-end gap-2 px-5 pb-1 pt-4"
+              >
+                {shelf.map((item) => (
+                  <ShelfItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
+                ))}
+              </motion.div>
+
+              {/* Shelf plank — wooden with depth */}
+              <div className="relative mx-1">
+                <div
+                  className="h-[6px]"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(160,110,50,0.20) 0%, rgba(140,90,40,0.15) 60%, rgba(120,75,35,0.10) 100%)",
+                    borderRadius: "0 0 2px 2px",
+                    boxShadow: "0 2px 6px rgba(100,70,30,0.12)",
+                  }}
+                />
+                {/* Shelf edge highlight */}
+                <div
+                  className="absolute inset-x-0 top-0 h-px"
+                  style={{ background: "rgba(200,160,100,0.15)" }}
+                />
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Bottom of shelf unit */}
+        <div className="h-3" />
       </div>
     </div>
   );
@@ -318,23 +573,28 @@ function ShelfZone({
 
 function ShelfItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
+  const r = seededRand(String(item.id));
+  const rotation = (r - 0.5) * 6;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/shelf flex flex-col items-center gap-1 rounded-lg px-2 pt-2 pb-0.5 transition-all hover:bg-white/[0.05] dark:hover:bg-white/[0.05]"
-    >
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-g-border/60 bg-g-card/60 shadow-sm transition-transform group-hover/shelf:scale-110 group-hover/shelf:-translate-y-1">
-        <Icon size={18} className="text-g-accent" />
+    <RoomItem item={item} onClick={onClick} liftDistance={-8} className="flex flex-col items-center">
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-lg border border-g-border/50 bg-g-card/80 shadow-md transition-all"
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        <Icon size={20} className="text-g-accent" />
       </div>
-      <p className="text-[10px] text-g-text-3 text-center leading-tight truncate max-w-[64px]">
+      <span className="mt-1 max-w-[64px] truncate text-center text-[10px] font-medium text-g-text-2">
         {item.name}
-      </p>
-    </button>
+      </span>
+    </RoomItem>
   );
 }
 
-/* ── Nightstand / Sleep station ── */
+/* ═══════════════════════════════════════════════
+   NIGHTSTAND ZONE
+   ═══════════════════════════════════════════════ */
+
 function NightstandZone({
   items,
   onSelectItem,
@@ -342,44 +602,100 @@ function NightstandZone({
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
   return (
-    <div className="relative border-b border-g-border/50 p-5">
-      <ZoneLabel label="Sleep Station" count={items.length} />
-      {/* Bed / surface */}
-      <div className="rounded-xl border border-g-border bg-gradient-to-br from-indigo-500/[0.04] to-violet-500/[0.04] dark:from-indigo-500/[0.03] dark:to-violet-500/[0.03] p-4">
-        <div className="flex flex-wrap gap-3">
-          {items.map((item) => (
-            <SleepItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
-          ))}
+    <div className="relative p-6">
+      <ZoneLabel icon="nightstand" label="Sleep Station" count={items.length} />
+
+      <div className="relative mt-3">
+        {/* Lamp */}
+        <div className="absolute -top-1 right-4 z-10 flex flex-col items-center">
+          {/* Lamp shade */}
+          <div
+            className="h-5 w-8 rounded-t-full"
+            style={{
+              background: "linear-gradient(180deg, rgba(251,191,36,0.25) 0%, rgba(251,191,36,0.10) 100%)",
+              boxShadow: "0 0 20px rgba(251,191,36,0.15)",
+            }}
+          />
+          {/* Lamp stem */}
+          <div className="h-4 w-[2px] bg-slate-400/40" />
+          {/* Lamp glow on surface */}
+          <div
+            className="absolute top-6 h-16 w-24 opacity-40"
+            style={{
+              background: "radial-gradient(ellipse, rgba(251,191,36,0.2) 0%, transparent 70%)",
+            }}
+          />
+        </div>
+
+        {/* Nightstand surface */}
+        <div className="overflow-hidden rounded-xl border border-indigo-500/10 dark:border-indigo-400/10">
+          {/* Surface */}
+          <div
+            className="relative min-h-[120px] p-4"
+            style={{
+              background: `
+                linear-gradient(135deg,
+                  rgba(99,102,241,0.04) 0%,
+                  rgba(139,92,246,0.03) 50%,
+                  rgba(99,102,241,0.05) 100%
+                )
+              `,
+            }}
+          >
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-wrap gap-3"
+            >
+              {items.map((item) => (
+                <NightstandItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
+              ))}
+            </motion.div>
+
+            {items.length === 0 ? (
+              <p className="py-6 text-center text-sm text-g-text-4">No sleep gear yet</p>
+            ) : null}
+          </div>
+
+          {/* Nightstand legs */}
+          <div className="flex justify-between px-4">
+            <div className="h-3 w-[3px] rounded-b bg-amber-800/15 dark:bg-amber-700/10" />
+            <div className="h-3 w-[3px] rounded-b bg-amber-800/15 dark:bg-amber-700/10" />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function SleepItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
+function NightstandItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/sleep flex items-center gap-2.5 rounded-xl border border-g-border/60 bg-g-card/40 px-3 py-2.5 transition-all hover:bg-g-card/70 hover:border-g-border"
-    >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 dark:bg-indigo-500/10 text-indigo-400 transition-transform group-hover/sleep:scale-110">
-        <Icon size={16} />
+    <RoomItem item={item} onClick={onClick} liftDistance={-6}>
+      <div className="flex items-center gap-2.5 rounded-xl border border-indigo-500/15 bg-g-card/60 px-3 py-2.5 shadow-md transition-all hover:border-indigo-400/25 dark:border-indigo-400/10 dark:hover:border-indigo-400/20">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 dark:bg-indigo-500/15">
+          <Icon size={18} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold text-g-text" style={{ maxWidth: 100 }}>
+            {item.name}
+          </p>
+          {item.weight != null ? (
+            <p className="text-[10px] text-g-text-4">{item.weight} kg</p>
+          ) : null}
+        </div>
       </div>
-      <div className="min-w-0 text-left">
-        <p className="text-xs font-medium text-g-text truncate max-w-[100px]">{item.name}</p>
-        {item.weight != null ? (
-          <p className="text-[10px] text-g-text-4">{item.weight} kg</p>
-        ) : null}
-      </div>
-    </button>
+    </RoomItem>
   );
 }
 
-/* ── Workbench: flat surface with tools laid out ── */
+/* ═══════════════════════════════════════════════
+   WORKBENCH ZONE
+   ═══════════════════════════════════════════════ */
+
 function WorkbenchZone({
   items,
   onSelectItem,
@@ -387,44 +703,96 @@ function WorkbenchZone({
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
   return (
-    <div className="relative border-b border-r border-g-border/50 p-5">
-      <ZoneLabel label="Workbench" count={items.length} />
-      {/* Bench surface */}
-      <div className="rounded-xl border border-g-border bg-gradient-to-b from-amber-800/[0.06] to-amber-900/[0.03] dark:from-amber-700/[0.04] dark:to-amber-800/[0.02] p-4">
-        <div className="flex flex-wrap gap-2.5">
-          {items.map((item) => (
-            <BenchItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
-          ))}
+    <div className="relative p-6">
+      <ZoneLabel icon="workbench" label="Workbench" count={items.length} />
+
+      <div className="relative mt-3">
+        {/* Bench top */}
+        <div className="overflow-hidden rounded-xl border-2 border-amber-800/12 dark:border-amber-700/8">
+          {/* Wood grain surface */}
+          <div
+            className="relative min-h-[100px] p-4"
+            style={{
+              background: `
+                repeating-linear-gradient(
+                  0deg,
+                  transparent,
+                  transparent 11px,
+                  rgba(139,90,43,0.04) 11px,
+                  rgba(139,90,43,0.04) 12px
+                ),
+                linear-gradient(135deg,
+                  rgba(180,130,70,0.06) 0%,
+                  rgba(160,110,60,0.04) 50%,
+                  rgba(180,130,70,0.06) 100%
+                )
+              `,
+            }}
+          >
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-wrap gap-3"
+            >
+              {items.map((item) => (
+                <WorkbenchItem key={item.id} item={item} onClick={() => onSelectItem(item)} />
+              ))}
+            </motion.div>
+
+            {items.length === 0 ? (
+              <p className="py-4 text-center text-sm text-g-text-4">Empty workbench</p>
+            ) : null}
+          </div>
+
+          {/* Bench edge */}
+          <div
+            className="h-[5px]"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(160,110,50,0.18) 0%, rgba(120,75,35,0.12) 100%)",
+              boxShadow: "0 2px 4px rgba(100,70,30,0.10)",
+            }}
+          />
+        </div>
+
+        {/* Metal legs */}
+        <div className="flex justify-between px-6">
+          <div className="h-6 w-[3px] rounded-b bg-slate-400/30" />
+          <div className="h-6 w-[3px] rounded-b bg-slate-400/30" />
         </div>
       </div>
     </div>
   );
 }
 
-function BenchItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
+function WorkbenchItem({ item, onClick }: { item: GearItemRow; onClick: () => void }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
-  const { ref, style, hovering, handlers } = useCardTilt(8, 1.08);
+  const r = seededRand(String(item.id));
+  const rotation = (r - 0.5) * 10;
+
   return (
-    <div ref={ref} style={style} {...handlers}>
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex flex-col items-center gap-1 rounded-lg border border-g-border/40 bg-g-card/30 p-2.5 transition-all hover:bg-g-card/60 hover:border-g-border"
+    <RoomItem item={item} onClick={onClick} liftDistance={-8}>
+      <div
+        className="flex flex-col items-center gap-1 rounded-lg border border-g-border/40 bg-g-card/50 p-2.5 shadow-md transition-all hover:bg-g-card/80 hover:shadow-lg"
+        style={{ transform: `rotate(${rotation}deg)` }}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
-          <Icon size={18} />
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
+          <Icon size={20} />
         </div>
-        <p className="text-[10px] font-medium text-g-text-2 text-center leading-tight truncate max-w-[68px]">
+        <span className="max-w-[68px] truncate text-center text-[10px] font-semibold text-g-text-2">
           {item.name}
-        </p>
-      </button>
-    </div>
+        </span>
+      </div>
+    </RoomItem>
   );
 }
 
-/* ── Floor: big items like tents/packs leaning against the wall ── */
+/* ═══════════════════════════════════════════════
+   FLOOR ZONE
+   ═══════════════════════════════════════════════ */
+
 function FloorZone({
   items,
   onSelectItem,
@@ -432,55 +800,103 @@ function FloorZone({
   items: GearItemRow[];
   onSelectItem: (item: GearItemRow) => void;
 }) {
-  if (items.length === 0) return null;
   return (
-    <div className="relative border-b border-g-border/50 p-5">
-      <ZoneLabel label="Gear Corner" count={items.length} />
-      <div className="flex flex-wrap gap-3">
+    <div className="relative p-6">
+      <ZoneLabel icon="floor" label="Gear Corner" count={items.length} />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="mt-3 flex flex-wrap items-end gap-4"
+      >
         {items.map((item, i) => (
           <FloorItem
             key={item.id}
             item={item}
-            lean={i % 3 === 0 ? -3 : i % 3 === 1 ? 2 : 0}
+            index={i}
             onClick={() => onSelectItem(item)}
           />
         ))}
-      </div>
+
+        {items.length === 0 ? (
+          <p className="w-full py-8 text-center text-sm text-g-text-4">
+            No tents or shelters yet
+          </p>
+        ) : null}
+      </motion.div>
     </div>
   );
 }
 
 function FloorItem({
   item,
-  lean,
+  index,
   onClick,
 }: {
   item: GearItemRow;
-  lean: number;
+  index: number;
   onClick: () => void;
 }) {
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
+  const r = seededRand(String(item.id));
+  const lean = (r - 0.5) * 8;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group/floor flex flex-col items-center gap-1.5 rounded-xl border border-g-border/50 bg-g-card/30 p-3 transition-all hover:bg-g-card/60 hover:border-g-border hover:shadow-lg"
-      style={{ transform: `rotate(${lean}deg)` }}
-    >
-      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent transition-transform group-hover/floor:scale-110 group-hover/floor:rotate-0">
-        <Icon size={28} />
-      </div>
-      <div className="text-center">
-        <p className="text-xs font-medium text-g-text truncate max-w-[80px]">{item.name}</p>
-        {item.brand ? (
-          <p className="text-[10px] text-g-text-4 truncate max-w-[80px]">{item.brand}</p>
-        ) : null}
-        {item.weight != null ? (
-          <p className="text-[10px] text-g-text-4 flex items-center justify-center gap-0.5">
-            <Scale size={8} /> {item.weight} kg
+    <RoomItem item={item} onClick={onClick} liftDistance={-6}>
+      <div
+        className="flex flex-col items-center gap-1.5 rounded-xl border border-g-border/50 bg-g-card/40 p-4 shadow-lg transition-all hover:bg-g-card/70 hover:shadow-xl"
+        style={{ transform: `rotate(${lean}deg)` }}
+      >
+        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent">
+          <Icon size={30} />
+        </div>
+        <div className="text-center">
+          <p className="max-w-[90px] truncate text-xs font-semibold text-g-text">
+            {item.name}
           </p>
-        ) : null}
+          {item.brand ? (
+            <p className="max-w-[90px] truncate text-[10px] text-g-text-3">
+              {item.brand}
+            </p>
+          ) : null}
+          {item.weight != null ? (
+            <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] text-g-text-4">
+              <Scale size={9} /> {item.weight} kg
+            </p>
+          ) : null}
+        </div>
       </div>
-    </button>
+    </RoomItem>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Zone Label
+   ═══════════════════════════════════════════════ */
+
+const ZONE_ICONS: Record<string, { emoji: string; color: string }> = {
+  pegboard: { emoji: "🔩", color: "text-slate-400" },
+  wardrobe: { emoji: "👔", color: "text-amber-400" },
+  shelf: { emoji: "🍳", color: "text-orange-400" },
+  nightstand: { emoji: "🌙", color: "text-indigo-400" },
+  workbench: { emoji: "🔧", color: "text-amber-400" },
+  floor: { emoji: "⛺", color: "text-emerald-400" },
+};
+
+function ZoneLabel({ icon, label, count }: { icon: string; label: string; count: number }) {
+  const z = ZONE_ICONS[icon];
+  return (
+    <div className="flex items-center gap-2">
+      {z ? <span className="text-sm">{z.emoji}</span> : null}
+      <span className="text-xs font-bold uppercase tracking-wider text-g-text-3">
+        {label}
+      </span>
+      {count > 0 ? (
+        <span className="rounded-full bg-g-raised px-2 py-0.5 text-[10px] font-medium text-g-text-4">
+          {count}
+        </span>
+      ) : null}
+    </div>
   );
 }
