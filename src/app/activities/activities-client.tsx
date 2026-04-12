@@ -1,17 +1,23 @@
 "use client";
 
 import {
+  AlertCircle,
   Award,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Circle,
+  Heart,
   Loader2,
   Minus,
   Shield,
+  ShoppingBag,
   Sparkles,
   X,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -256,36 +262,69 @@ export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientP
                               </div>
                             </div>
 
-                            {/* Gear readiness detail */}
+                            {/* Gear readiness checklist */}
                             <div>
-                              <p className="text-xs font-medium text-g-text-3 mb-1.5">
-                                Gear readiness
-                              </p>
-                              {/* Progress bar */}
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 rounded-full bg-g-raised overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                      badge.level === "ready"
-                                        ? "bg-emerald-500"
-                                        : badge.level === "most"
-                                          ? "bg-sky-500"
-                                          : badge.level === "some"
-                                            ? "bg-amber-500"
-                                            : "bg-g-text-4"
-                                    }`}
-                                    style={{ width: `${Math.round(badge.fraction * 100)}%` }}
-                                  />
-                                </div>
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs font-medium text-g-text-3">
+                                  Gear checklist
+                                </p>
                                 <span className={`text-xs font-medium ${badgeConf.text}`}>
-                                  {BADGE_LABELS[badge.level]}
+                                  {badge.matchedCount}/{badge.totalRequired} — {BADGE_LABELS[badge.level]}
                                 </span>
                               </div>
-                              {badge.totalRequired > 0 ? (
-                                <p className="mt-1 text-xs text-g-text-4">
-                                  {badge.matchedCount} of {badge.totalRequired} gear
-                                  items matched
-                                </p>
+                              {/* Progress bar */}
+                              <div className="h-1.5 rounded-full bg-g-raised overflow-hidden mb-3">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    badge.level === "ready"
+                                      ? "bg-emerald-500"
+                                      : badge.level === "most"
+                                        ? "bg-sky-500"
+                                        : badge.level === "some"
+                                          ? "bg-amber-500"
+                                          : "bg-g-text-4"
+                                  }`}
+                                  style={{ width: `${Math.round(badge.fraction * 100)}%` }}
+                                />
+                              </div>
+                              {/* Item-by-item checklist */}
+                              {badge.details.length > 0 ? (
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                  {badge.details.map((detail) => (
+                                    <div
+                                      key={detail.keyword}
+                                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                                        detail.matched
+                                          ? "bg-emerald-500/8 dark:bg-emerald-500/8"
+                                          : "bg-g-raised/50"
+                                      }`}
+                                    >
+                                      {detail.matched ? (
+                                        <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                                      ) : (
+                                        <Circle size={13} className="shrink-0 text-g-text-4" />
+                                      )}
+                                      <span className={`capitalize flex-1 ${
+                                        detail.matched ? "text-g-text-2" : "text-g-text-3"
+                                      }`}>
+                                        {detail.keyword}
+                                      </span>
+                                      {detail.matched && detail.matchedItem ? (
+                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate max-w-[120px]">
+                                          {detail.matchedItem}
+                                        </span>
+                                      ) : (
+                                        <Link
+                                          href="/gear"
+                                          className="flex items-center gap-0.5 text-[10px] text-g-accent hover:underline shrink-0"
+                                        >
+                                          <ShoppingBag size={9} />
+                                          Add
+                                        </Link>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               ) : null}
                             </div>
 

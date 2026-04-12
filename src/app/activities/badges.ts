@@ -2,12 +2,21 @@ import type { Activity } from "./activity-data";
 
 export type BadgeLevel = "none" | "some" | "most" | "ready";
 
+export type GearMatch = {
+  keyword: string;
+  matched: boolean;
+  /** The user's gear item that matched, if any */
+  matchedItem: string | null;
+};
+
 export type Badge = {
   level: BadgeLevel;
   label: string;
   matchedCount: number;
   totalRequired: number;
   fraction: number;
+  /** Per-keyword breakdown showing what matched and what's missing */
+  details: GearMatch[];
 };
 
 export const BADGE_CONFIG: Record<BadgeLevel, { bg: string; text: string; border: string; icon: string }> = {
@@ -35,22 +44,29 @@ export function computeBadge(activity: Activity, userGear: GearItem[]): Badge {
   const totalRequired = keywords.length;
 
   if (totalRequired === 0) {
-    return { level: "ready", label: BADGE_LABELS.ready, matchedCount: 0, totalRequired: 0, fraction: 1 };
+    return { level: "ready", label: BADGE_LABELS.ready, matchedCount: 0, totalRequired: 0, fraction: 1, details: [] };
   }
 
-  // Check how many gear keywords the user has
+  const details: GearMatch[] = [];
   let matchedCount = 0;
+
   for (const keyword of keywords) {
     const kw = keyword.toLowerCase();
-    const found = userGear.some(
+    const matchedGear = userGear.find(
       (g) =>
         g.name.toLowerCase().includes(kw) ||
         (g.categoryName && categories.includes(g.categoryName)),
     );
-    if (found) matchedCount++;
+
+    if (matchedGear) {
+      matchedCount++;
+      details.push({ keyword, matched: true, matchedItem: matchedGear.name });
+    } else {
+      details.push({ keyword, matched: false, matchedItem: null });
+    }
   }
 
-  // Also give partial credit for having gear in the right categories
+  // Category boost
   const categoryMatches = new Set<string>();
   for (const g of userGear) {
     if (g.categoryName && categories.includes(g.categoryName)) {
@@ -58,7 +74,6 @@ export function computeBadge(activity: Activity, userGear: GearItem[]): Badge {
     }
   }
 
-  // Combine: keyword matches are primary, category matches provide a small boost
   const keywordFraction = matchedCount / totalRequired;
   const categoryBoost = categories.length > 0
     ? (categoryMatches.size / categories.length) * 0.2
@@ -71,11 +86,15 @@ export function computeBadge(activity: Activity, userGear: GearItem[]): Badge {
   else if (fraction > 0) level = "some";
   else level = "none";
 
+  // Sort: matched first, then missing
+  details.sort((a, b) => (a.matched === b.matched ? 0 : a.matched ? -1 : 1));
+
   return {
     level,
     label: BADGE_LABELS[level],
     matchedCount,
     totalRequired,
     fraction,
+    details,
   };
 }
