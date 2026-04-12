@@ -4,23 +4,6 @@ import Link from "next/link";
 import { Backpack } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-  FieldSet,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { createClient } from "@/utils/supabase/client";
 
 type LoginFormProps = {
@@ -79,96 +62,101 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     }
   }
 
+  const inputClass =
+    "h-10 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20";
+
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="items-center text-center">
-        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+    <div className="w-full max-w-md rounded-2xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
+      <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-2 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
           <Backpack size={24} strokeWidth={1.5} />
         </div>
-        <CardTitle className="text-xl">
+        <h1 className="text-xl font-bold text-stone-100">
           {mode === "sign-in" ? "Welcome back" : "Create account"}
-        </CardTitle>
-        <CardDescription>
+        </h1>
+        <p className="text-sm text-stone-500">
           {mode === "sign-in"
             ? "Sign in to access your gear inventory."
             : "Create an account to start tracking your gear."}
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={onSubmit}>
-        <CardContent className="space-y-4">
-          <FieldSet className="gap-4">
-            <Field>
-              <FieldLabel htmlFor="auth-email">Email</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="auth-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </FieldContent>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="auth-password">Password</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="auth-password"
-                  type="password"
-                  autoComplete={
-                    mode === "sign-in" ? "current-password" : "new-password"
-                  }
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-                <FieldDescription>
-                  At least 6 characters.
-                </FieldDescription>
-              </FieldContent>
-            </Field>
-          </FieldSet>
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-          {info ? (
-            <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary" role="status">
-              {info}
-            </p>
-          ) : null}
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <Button type="submit" disabled={loading}>
+        </p>
+      </div>
+
+      <form onSubmit={onSubmit} className="px-6 py-6 space-y-4">
+        <div className="space-y-1.5">
+          <label htmlFor="auth-email" className="text-sm font-medium text-stone-300">
+            Email
+          </label>
+          <input
+            id="auth-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className={inputClass}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="auth-password" className="text-sm font-medium text-stone-300">
+            Password
+          </label>
+          <input
+            id="auth-password"
+            type="password"
+            autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            className={inputClass}
+          />
+          <p className="text-xs text-stone-600">At least 6 characters.</p>
+        </div>
+
+        {error ? (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            {error}
+          </p>
+        ) : null}
+        {info ? (
+          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+            {info}
+          </p>
+        ) : null}
+
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-lg bg-amber-500/20 px-5 py-2.5 text-sm font-semibold text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+          >
             {loading
               ? "Please wait..."
               : mode === "sign-in"
                 ? "Sign in"
                 : "Sign up"}
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="ghost"
             onClick={() => {
               setMode((m) => (m === "sign-in" ? "sign-up" : "sign-in"));
               setError(null);
               setInfo(null);
             }}
+            className="text-sm text-stone-500 transition-colors hover:text-stone-300"
           >
             {mode === "sign-in"
               ? "Need an account? Sign up"
               : "Have an account? Sign in"}
-          </Button>
-        </CardFooter>
+          </button>
+        </div>
       </form>
-      <div className="px-4 pb-4 text-center text-sm text-muted-foreground">
-        <Link href="/" className="underline underline-offset-4 hover:text-foreground">
+
+      <div className="border-t border-white/[0.06] px-6 py-4 text-center">
+        <Link href="/" className="text-sm text-stone-500 underline underline-offset-4 hover:text-stone-300">
           Back to home
         </Link>
       </div>
-    </Card>
+    </div>
   );
 }

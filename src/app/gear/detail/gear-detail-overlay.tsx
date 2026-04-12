@@ -1,8 +1,9 @@
 "use client";
 
-import { Pencil, Scale, Settings, Trash2, X } from "lucide-react";
+import { Heart, Pencil, Scale, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toggleWishlist } from "../actions";
 import { CONDITION_LABELS } from "../schema";
 import { getTagGroup, TAG_GROUP_COLORS_DARK } from "../tags";
 import { getGearIcon } from "../gear-icons";
@@ -106,8 +107,24 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
             />
           ) : (
             <div className="p-6">
+              {/* Wishlist toggle */}
+              <button
+                type="button"
+                onClick={async () => {
+                  await toggleWishlist(item.id, !item.wishlist);
+                  router.refresh();
+                }}
+                className={`absolute top-4 right-14 z-10 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                  item.wishlist
+                    ? "bg-red-500/20 text-red-400"
+                    : "text-stone-500 hover:bg-stone-800 hover:text-red-400"
+                }`}
+              >
+                <Heart size={16} fill={item.wishlist ? "currentColor" : "none"} />
+              </button>
+
               {/* Icon + header */}
-              <div className="mb-6 flex items-start gap-4 pr-8">
+              <div className="mb-6 flex items-start gap-4 pr-16">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
                   <ItemIcon size={28} />
                 </div>

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { NavBar } from "@/components/nav-bar";
 import { GearClient, type GearItemRow } from "./gear-client";
 
 function normalizeGearItems(
@@ -14,6 +15,7 @@ function normalizeGearItems(
         weight: number | null;
         notes: string | null;
         tags: string[] | null;
+        wishlist: boolean | null;
         category_id: string | null;
         categories:
           | { name: string }
@@ -26,6 +28,7 @@ function normalizeGearItems(
   return rows.map((row) => ({
     ...row,
     tags: row.tags ?? [],
+    wishlist: row.wishlist ?? false,
     categories: Array.isArray(row.categories)
       ? (row.categories[0] ?? null)
       : row.categories,
@@ -60,6 +63,7 @@ export default async function GearPage() {
       weight,
       notes,
       tags,
+      wishlist,
       category_id,
       categories ( name )
     `,
@@ -67,11 +71,14 @@ export default async function GearPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <GearClient
-      userEmail={user.email ?? ""}
-      categories={categories ?? []}
-      items={normalizeGearItems(items)}
-      loadError={categoriesError?.message ?? itemsError?.message}
-    />
+    <div className="flex min-h-screen flex-col bg-stone-950 dark:bg-stone-950">
+      <NavBar userEmail={user.email ?? ""} />
+      <GearClient
+        userEmail={user.email ?? ""}
+        categories={categories ?? []}
+        items={normalizeGearItems(items)}
+        loadError={categoriesError?.message ?? itemsError?.message}
+      />
+    </div>
   );
 }

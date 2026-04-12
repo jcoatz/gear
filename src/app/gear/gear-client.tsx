@@ -1,34 +1,26 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   Backpack,
+  Heart,
   LayoutGrid,
-  LogOut,
   Package,
   Plus,
   Scale,
+  Star,
   Tag,
   Warehouse,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { createClient } from "@/utils/supabase/client";
-import { addGearItem } from "./actions";
+import { addGearItem, toggleWishlist } from "./actions";
 import { POPULAR_BRANDS } from "./catalog";
 import { GearDetailOverlay } from "./detail/gear-detail-overlay";
 import { getGearIcon } from "./gear-icons";
+import { InlineEdit } from "./inline-edit";
 import { QuickAdd } from "./quick-add";
 import { GearRoom } from "./room/gear-room";
 import { useCardTilt } from "./room/use-card-tilt";
@@ -53,6 +45,7 @@ export type GearItemRow = {
   weight: number | null;
   notes: string | null;
   tags: string[];
+  wishlist: boolean;
   category_id: string | null;
   categories: { name: string } | null;
 };
@@ -64,7 +57,7 @@ type GearClientProps = {
   loadError?: string;
 };
 
-/* ── Condition dot colours (matches room cards) ── */
+/* ── Condition dot colours ── */
 const CONDITION_DOTS: Record<string, string> = {
   new: "bg-emerald-400 shadow-emerald-400/50",
   like_new: "bg-teal-400 shadow-teal-400/50",
@@ -73,14 +66,7 @@ const CONDITION_DOTS: Record<string, string> = {
   poor: "bg-red-400 shadow-red-400/50",
 };
 
-/* ── Pegboard background (shared with room) ── */
-const PEGBOARD_BG = [
-  "radial-gradient(ellipse 60% 35% at 50% 0%, rgba(251,191,36,0.07) 0%, transparent 70%)",
-  "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
-  "rgb(28, 25, 23)",
-].join(", ");
-
-/* ── Grid card with tilt ── */
+/* ── Grid card with tilt + wishlist + inline edit ── */
 function GearGridCard({
   item,
   onClick,
@@ -89,97 +75,128 @@ function GearGridCard({
   onClick: () => void;
 }) {
   const { ref, style, glowX, glowY, hovering, handlers } = useCardTilt(10, 1.03);
+  const router = useRouter();
   const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
   const conditionDot = item.condition ? CONDITION_DOTS[item.condition] ?? "" : "";
   const conditionLabel = item.condition
     ? CONDITION_LABELS[item.condition as keyof typeof CONDITION_LABELS] ?? item.condition
     : null;
 
+  async function handleWishlistToggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    await toggleWishlist(item.id, !item.wishlist);
+    router.refresh();
+  }
+
   return (
-    <div
-      ref={ref}
-      style={style}
-      {...handlers}
-      onClick={onClick}
-      className="group/card relative cursor-pointer rounded-xl border border-white/[0.08] bg-stone-900/60 backdrop-blur-md transition-shadow hover:shadow-lg hover:shadow-amber-500/5"
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2, layout: { duration: 0.3 } }}
     >
-      {/* Glow */}
-      {hovering ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 rounded-xl"
-          style={{
-            background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(255,255,255,0.08) 0%, transparent 55%)`,
-          }}
-        />
-      ) : null}
+      <div
+        ref={ref}
+        style={style}
+        {...handlers}
+        onClick={onClick}
+        className="group/card relative cursor-pointer rounded-xl border border-white/[0.08] bg-stone-900/60 backdrop-blur-md transition-shadow hover:shadow-lg hover:shadow-amber-500/5"
+      >
+        {/* Glow */}
+        {hovering ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0 rounded-xl"
+            style={{
+              background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(255,255,255,0.08) 0%, transparent 55%)`,
+            }}
+          />
+        ) : null}
 
-      <div className="relative z-10 flex flex-col gap-3 p-4">
-        {/* Icon + name row */}
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
-            <Icon size={20} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold leading-snug text-stone-100">
-              {item.name}
-            </p>
-            {(item.brand || item.model) ? (
-              <p className="mt-0.5 truncate text-xs text-stone-400">
-                {[item.brand, item.model].filter(Boolean).join(" ")}
-              </p>
-            ) : null}
-          </div>
-        </div>
+        {/* Wishlist heart */}
+        <button
+          type="button"
+          onClick={handleWishlistToggle}
+          className={`absolute top-3 right-3 z-20 flex h-7 w-7 items-center justify-center rounded-full transition-all ${
+            item.wishlist
+              ? "bg-red-500/20 text-red-400"
+              : "bg-stone-800/60 text-stone-600 opacity-0 group-hover/card:opacity-100"
+          } hover:scale-110`}
+        >
+          <Heart size={14} fill={item.wishlist ? "currentColor" : "none"} />
+        </button>
 
-        {/* Tags */}
-        {item.tags.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {item.tags.slice(0, 3).map((tag) => {
-              const group = getTagGroup(tag);
-              const colors = group
-                ? TAG_GROUP_COLORS_DARK[group]
-                : { bg: "bg-stone-800", text: "text-stone-400", border: "border-stone-700" };
-              return (
-                <span
-                  key={tag}
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text} ${colors.border}`}
-                >
-                  {tag}
+        <div className="relative z-10 flex flex-col gap-3 p-4">
+          {/* Icon + name row */}
+          <div className="flex items-start gap-3 pr-8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+              <Icon size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <InlineEdit
+                value={item.name}
+                itemId={item.id}
+                field="name"
+                className="truncate font-semibold leading-snug text-stone-100"
+              />
+              {(item.brand || item.model) ? (
+                <p className="mt-0.5 truncate text-xs text-stone-400">
+                  {[item.brand, item.model].filter(Boolean).join(" ")}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Tags */}
+          {item.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {item.tags.slice(0, 3).map((tag) => {
+                const group = getTagGroup(tag);
+                const colors = group
+                  ? TAG_GROUP_COLORS_DARK[group]
+                  : { bg: "bg-stone-800", text: "text-stone-400", border: "border-stone-700" };
+                return (
+                  <span
+                    key={tag}
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text} ${colors.border}`}
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
+              {item.tags.length > 3 ? (
+                <span className="rounded-full bg-stone-800/80 px-2 py-0.5 text-[10px] text-stone-500">
+                  +{item.tags.length - 3}
                 </span>
-              );
-            })}
-            {item.tags.length > 3 ? (
-              <span className="rounded-full bg-stone-800/80 px-2 py-0.5 text-[10px] text-stone-500">
-                +{item.tags.length - 3}
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Bottom row */}
+          <div className="flex items-center gap-3 text-xs text-stone-400">
+            {item.categories?.name ? (
+              <span className="flex items-center gap-1">
+                <Tag size={10} />
+                {item.categories.name}
+              </span>
+            ) : null}
+            {conditionLabel ? (
+              <span className="flex items-center gap-1.5">
+                <span className={`inline-block h-2 w-2 rounded-full shadow-sm ${conditionDot}`} />
+                {conditionLabel}
+              </span>
+            ) : null}
+            {item.weight != null ? (
+              <span className="flex items-center gap-1 rounded-full bg-stone-800/80 px-2 py-0.5">
+                <Scale size={10} />
+                {item.weight} kg
               </span>
             ) : null}
           </div>
-        ) : null}
-
-        {/* Bottom row */}
-        <div className="flex items-center gap-3 text-xs text-stone-400">
-          {item.categories?.name ? (
-            <span className="flex items-center gap-1">
-              <Tag size={10} />
-              {item.categories.name}
-            </span>
-          ) : null}
-          {conditionLabel ? (
-            <span className="flex items-center gap-1.5">
-              <span className={`inline-block h-2 w-2 rounded-full shadow-sm ${conditionDot}`} />
-              {conditionLabel}
-            </span>
-          ) : null}
-          {item.weight != null ? (
-            <span className="flex items-center gap-1 rounded-full bg-stone-800/80 px-2 py-0.5">
-              <Scale size={10} />
-              {item.weight} kg
-            </span>
-          ) : null}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -195,8 +212,16 @@ export function GearClient({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedItem, setSelectedItem] = useState<GearItemRow | null>(null);
+  const [showWishlistOnly, setShowWishlistOnly] = useState(false);
 
-  const filters = useGearFilters(items);
+  const filters = useGearFilters(
+    showWishlistOnly ? items.filter((i) => i.wishlist) : items,
+  );
+
+  const wishlistCount = useMemo(
+    () => items.filter((i) => i.wishlist).length,
+    [items],
+  );
 
   const defaultValues = useMemo<GearItemFormValues>(
     () => ({
@@ -227,21 +252,8 @@ export function GearClient({
     [items],
   );
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: PEGBOARD_BG,
-        backgroundSize: "100% 100%, 20px 20px, 100% 100%",
-      }}
-    >
+    <div className="flex-1">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6">
         {/* ── Header ── */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -249,14 +261,29 @@ export function GearClient({
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 shadow-sm shadow-amber-500/10">
               <Backpack size={20} strokeWidth={1.5} />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-stone-100">
-                My Gear
-              </h1>
-              <p className="text-sm text-stone-500">{userEmail}</p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+              My Gear
+            </h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Wishlist filter */}
+            {wishlistCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowWishlistOnly((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  showWishlistOnly
+                    ? "border-red-500/30 bg-red-500/15 text-red-400"
+                    : "border-white/[0.06] bg-stone-900/80 text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                <Heart size={14} fill={showWishlistOnly ? "currentColor" : "none"} />
+                Wishlist
+                <span className="rounded-full bg-stone-800/80 px-1.5 text-xs">
+                  {wishlistCount}
+                </span>
+              </button>
+            ) : null}
             {/* View toggle */}
             <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-stone-900/80 p-0.5 backdrop-blur-md">
               <button
@@ -284,14 +311,6 @@ export function GearClient({
                 Room
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-1.5 text-sm text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-300"
-            >
-              <LogOut size={14} />
-              Sign out
-            </button>
           </div>
         </header>
 
@@ -346,7 +365,7 @@ export function GearClient({
           filteredCount={filters.filteredItems.length}
         />
 
-        {/* ── Gear items — Grid or Room view ── */}
+        {/* ── Gear items ── */}
         {viewMode === "room" ? (
           <GearRoom
             items={filters.filteredItems}
@@ -354,13 +373,21 @@ export function GearClient({
             onSelectItem={setSelectedItem}
           />
         ) : filters.filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/[0.1] bg-stone-900/40 px-6 py-16 text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/[0.1] bg-stone-900/40 px-6 py-16 text-center"
+          >
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-800/80">
               <Backpack size={28} className="text-stone-500" />
             </div>
             <div>
               <p className="font-medium text-stone-300">
-                {items.length === 0 ? "No gear yet" : "No matches"}
+                {items.length === 0
+                  ? "No gear yet"
+                  : showWishlistOnly
+                    ? "No wishlist items"
+                    : "No matches"}
               </p>
               <p className="mt-1 text-sm text-stone-500">
                 {items.length === 0
@@ -368,17 +395,21 @@ export function GearClient({
                   : "Try adjusting your search or filters."}
               </p>
             </div>
-          </div>
+          </motion.div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filters.filteredItems.map((row) => (
-              <GearGridCard
-                key={row.id}
-                item={row}
-                onClick={() => setSelectedItem(row)}
-              />
-            ))}
-          </div>
+          <LayoutGroup>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {filters.filteredItems.map((row) => (
+                  <GearGridCard
+                    key={row.id}
+                    item={row}
+                    onClick={() => setSelectedItem(row)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
         )}
 
         {/* ── Quick add ── */}

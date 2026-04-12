@@ -10,15 +10,24 @@ export default async function LoginPage({
   const nextPath = next?.startsWith("/") ? next : "/gear";
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center p-6">
-      {/* Subtle background decoration */}
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-stone-950 p-6">
+      {/* Background decoration */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 bg-gradient-to-br from-primary/6 via-transparent to-amber-500/4"
+        className="pointer-events-none fixed inset-0 bg-gradient-to-br from-amber-500/[0.04] via-transparent to-stone-950"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+        }}
       />
       <div aria-hidden className="pointer-events-none fixed right-[5%] bottom-[10%]">
         <Mountain
-          className="text-primary/[0.05]"
+          className="text-amber-500/[0.04]"
           size={200}
           strokeWidth={1}
         />
