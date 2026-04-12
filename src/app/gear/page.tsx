@@ -13,6 +13,7 @@ function normalizeGearItems(
         condition: string | null;
         weight: number | null;
         notes: string | null;
+        tags: string[] | null;
         category_id: string | null;
         categories:
           | { name: string }
@@ -24,6 +25,7 @@ function normalizeGearItems(
   if (!rows) return [];
   return rows.map((row) => ({
     ...row,
+    tags: row.tags ?? [],
     categories: Array.isArray(row.categories)
       ? (row.categories[0] ?? null)
       : row.categories,
@@ -57,6 +59,7 @@ export default async function GearPage() {
       condition,
       weight,
       notes,
+      tags,
       category_id,
       categories ( name )
     `,

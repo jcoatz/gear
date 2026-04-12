@@ -15,23 +15,6 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -44,14 +27,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { addGearItem } from "./actions";
 import { POPULAR_BRANDS } from "./catalog";
+import { GearDetailOverlay } from "./detail/gear-detail-overlay";
+import { getGearIcon } from "./gear-icons";
 import { QuickAdd } from "./quick-add";
 import { GearRoom } from "./room/gear-room";
+import { useCardTilt } from "./room/use-card-tilt";
 import {
   CONDITION_LABELS,
   GEAR_CONDITIONS,
   type GearItemFormValues,
   gearItemFormSchema,
 } from "./schema";
+import { getTagGroup, TAG_GROUP_COLORS_DARK } from "./tags";
+import { GearToolbar } from "./toolbar/gear-toolbar";
+import { useGearFilters } from "./use-gear-filters";
 
 export type CategoryRow = { id: string; name: string };
 
@@ -63,6 +52,7 @@ export type GearItemRow = {
   condition: string | null;
   weight: number | null;
   notes: string | null;
+  tags: string[];
   category_id: string | null;
   categories: { name: string } | null;
 };
@@ -74,14 +64,126 @@ type GearClientProps = {
   loadError?: string;
 };
 
-const CONDITION_COLORS: Record<string, string> = {
-  new: "bg-emerald-100 text-emerald-800",
-  like_new: "bg-teal-100 text-teal-800",
-  good: "bg-sky-100 text-sky-800",
-  fair: "bg-amber-100 text-amber-800",
-  poor: "bg-red-100 text-red-800",
+/* ── Condition dot colours (matches room cards) ── */
+const CONDITION_DOTS: Record<string, string> = {
+  new: "bg-emerald-400 shadow-emerald-400/50",
+  like_new: "bg-teal-400 shadow-teal-400/50",
+  good: "bg-sky-400 shadow-sky-400/50",
+  fair: "bg-amber-400 shadow-amber-400/50",
+  poor: "bg-red-400 shadow-red-400/50",
 };
 
+/* ── Pegboard background (shared with room) ── */
+const PEGBOARD_BG = [
+  "radial-gradient(ellipse 60% 35% at 50% 0%, rgba(251,191,36,0.07) 0%, transparent 70%)",
+  "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
+  "rgb(28, 25, 23)",
+].join(", ");
+
+/* ── Grid card with tilt ── */
+function GearGridCard({
+  item,
+  onClick,
+}: {
+  item: GearItemRow;
+  onClick: () => void;
+}) {
+  const { ref, style, glowX, glowY, hovering, handlers } = useCardTilt(10, 1.03);
+  const Icon = getGearIcon(item.name, item.brand, item.categories?.name);
+  const conditionDot = item.condition ? CONDITION_DOTS[item.condition] ?? "" : "";
+  const conditionLabel = item.condition
+    ? CONDITION_LABELS[item.condition as keyof typeof CONDITION_LABELS] ?? item.condition
+    : null;
+
+  return (
+    <div
+      ref={ref}
+      style={style}
+      {...handlers}
+      onClick={onClick}
+      className="group/card relative cursor-pointer rounded-xl border border-white/[0.08] bg-stone-900/60 backdrop-blur-md transition-shadow hover:shadow-lg hover:shadow-amber-500/5"
+    >
+      {/* Glow */}
+      {hovering ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 rounded-xl"
+          style={{
+            background: `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(255,255,255,0.08) 0%, transparent 55%)`,
+          }}
+        />
+      ) : null}
+
+      <div className="relative z-10 flex flex-col gap-3 p-4">
+        {/* Icon + name row */}
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+            <Icon size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold leading-snug text-stone-100">
+              {item.name}
+            </p>
+            {(item.brand || item.model) ? (
+              <p className="mt-0.5 truncate text-xs text-stone-400">
+                {[item.brand, item.model].filter(Boolean).join(" ")}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Tags */}
+        {item.tags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {item.tags.slice(0, 3).map((tag) => {
+              const group = getTagGroup(tag);
+              const colors = group
+                ? TAG_GROUP_COLORS_DARK[group]
+                : { bg: "bg-stone-800", text: "text-stone-400", border: "border-stone-700" };
+              return (
+                <span
+                  key={tag}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${colors.bg} ${colors.text} ${colors.border}`}
+                >
+                  {tag}
+                </span>
+              );
+            })}
+            {item.tags.length > 3 ? (
+              <span className="rounded-full bg-stone-800/80 px-2 py-0.5 text-[10px] text-stone-500">
+                +{item.tags.length - 3}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Bottom row */}
+        <div className="flex items-center gap-3 text-xs text-stone-400">
+          {item.categories?.name ? (
+            <span className="flex items-center gap-1">
+              <Tag size={10} />
+              {item.categories.name}
+            </span>
+          ) : null}
+          {conditionLabel ? (
+            <span className="flex items-center gap-1.5">
+              <span className={`inline-block h-2 w-2 rounded-full shadow-sm ${conditionDot}`} />
+              {conditionLabel}
+            </span>
+          ) : null}
+          {item.weight != null ? (
+            <span className="flex items-center gap-1 rounded-full bg-stone-800/80 px-2 py-0.5">
+              <Scale size={10} />
+              {item.weight} kg
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ── */
 export function GearClient({
   userEmail,
   categories,
@@ -92,6 +194,9 @@ export function GearClient({
   const [viewMode, setViewMode] = useState<"grid" | "room">("grid");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<GearItemRow | null>(null);
+
+  const filters = useGearFilters(items);
 
   const defaultValues = useMemo<GearItemFormValues>(
     () => ({
@@ -102,6 +207,7 @@ export function GearClient({
       condition: "good",
       weight: "",
       notes: "",
+      tags: [],
     }),
     [categories],
   );
@@ -112,8 +218,7 @@ export function GearClient({
   });
 
   const totalWeight = useMemo(
-    () =>
-      items.reduce((sum, item) => sum + (item.weight ?? 0), 0),
+    () => items.reduce((sum, item) => sum + (item.weight ?? 0), 0),
     [items],
   );
 
@@ -130,364 +235,346 @@ export function GearClient({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6">
-      {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Backpack size={20} strokeWidth={1.5} />
+    <div
+      className="min-h-screen"
+      style={{
+        background: PEGBOARD_BG,
+        backgroundSize: "100% 100%, 20px 20px, 100% 100%",
+      }}
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6">
+        {/* ── Header ── */}
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 shadow-sm shadow-amber-500/10">
+              <Backpack size={20} strokeWidth={1.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+                My Gear
+              </h1>
+              <p className="text-sm text-stone-500">{userEmail}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-heading text-2xl font-bold tracking-tight">
-              My Gear
-            </h1>
-            <p className="text-sm text-muted-foreground">{userEmail}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5">
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-stone-900/80 p-0.5 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === "grid"
+                    ? "bg-stone-800 text-stone-100 shadow-sm"
+                    : "text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                <LayoutGrid size={14} />
+                Grid
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("room")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === "room"
+                    ? "bg-stone-800 text-stone-100 shadow-sm"
+                    : "text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                <Warehouse size={14} />
+                Room
+              </button>
+            </div>
             <button
               type="button"
-              onClick={() => setViewMode("grid")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "grid"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-1.5 text-sm text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-300"
             >
-              <LayoutGrid size={14} />
-              Grid
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("room")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === "room"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Warehouse size={14} />
-              Room
+              <LogOut size={14} />
+              Sign out
             </button>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut size={16} className="mr-1.5" />
-            Sign out
-          </Button>
-        </div>
-      </header>
+        </header>
 
-      {loadError ? (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          Could not load gear: {loadError}
-        </p>
-      ) : null}
+        {loadError ? (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            Could not load gear: {loadError}
+          </p>
+        ) : null}
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Package size={18} />
+        {/* ── Stats bar ── */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+              <Package size={18} />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold leading-none text-stone-100">
+                {items.length}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">Items</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-semibold leading-none">{items.length}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Items</p>
+          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+              <Scale size={18} />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold leading-none text-stone-100">
+                {totalWeight > 0 ? totalWeight.toFixed(1) : "0"}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">Total kg</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+              <Tag size={18} />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold leading-none text-stone-100">
+                {categoryCount}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">Categories</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
-            <Scale size={18} />
+
+        {/* ── Toolbar ── */}
+        <GearToolbar
+          filters={filters}
+          categories={categories}
+          totalCount={items.length}
+          filteredCount={filters.filteredItems.length}
+        />
+
+        {/* ── Gear items — Grid or Room view ── */}
+        {viewMode === "room" ? (
+          <GearRoom
+            items={filters.filteredItems}
+            categories={categories}
+            onSelectItem={setSelectedItem}
+          />
+        ) : filters.filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/[0.1] bg-stone-900/40 px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-800/80">
+              <Backpack size={28} className="text-stone-500" />
+            </div>
+            <div>
+              <p className="font-medium text-stone-300">
+                {items.length === 0 ? "No gear yet" : "No matches"}
+              </p>
+              <p className="mt-1 text-sm text-stone-500">
+                {items.length === 0
+                  ? "Add your first item with the form below to get started."
+                  : "Try adjusting your search or filters."}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-semibold leading-none">
-              {totalWeight > 0 ? totalWeight.toFixed(1) : "0"}
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filters.filteredItems.map((row) => (
+              <GearGridCard
+                key={row.id}
+                item={row}
+                onClick={() => setSelectedItem(row)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Quick add ── */}
+        <QuickAdd categories={categories} />
+
+        {/* ── Add gear form ── */}
+        <div className="rounded-xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
+          <div className="border-b border-white/[0.06] px-5 py-4">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-stone-100">
+              <Plus size={18} className="text-amber-400" />
+              Add gear
+            </h2>
+            <p className="mt-1 text-sm text-stone-500">
+              {categories.length === 0
+                ? "Add rows to the categories table in Supabase to enable the category dropdown."
+                : "Save a new item to your inventory."}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Total kg</p>
           </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
-            <Tag size={18} />
-          </div>
-          <div>
-            <p className="text-2xl font-semibold leading-none">{categoryCount}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Categories</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Gear items — Grid or Room view */}
-      {viewMode === "room" ? (
-        <GearRoom items={items} categories={categories} />
-      ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-card/50 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <Backpack size={28} className="text-muted-foreground" />
-          </div>
-          <div>
-            <p className="font-medium">No gear yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Add your first item with the form below to get started.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((row) => (
-            <div
-              key={row.id}
-              className="group flex flex-col gap-3 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold leading-snug">{row.name}</p>
-                  {(row.brand || row.model) ? (
-                    <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                      {[row.brand, row.model].filter(Boolean).join(" ")}
-                    </p>
+          <form
+            onSubmit={form.handleSubmit(async (values) => {
+              setFormError(null);
+              setSubmitting(true);
+              try {
+                const result = await addGearItem(values);
+                if (!result.ok) {
+                  setFormError(result.message);
+                  return;
+                }
+                form.reset({
+                  ...defaultValues,
+                  category_id: values.category_id,
+                  condition: values.condition,
+                });
+                router.refresh();
+              } finally {
+                setSubmitting(false);
+              }
+            })}
+          >
+            <div className="space-y-4 px-5 py-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <label htmlFor="gear-name" className="text-sm font-medium text-stone-300">
+                    Name
+                  </label>
+                  <input
+                    id="gear-name"
+                    autoComplete="off"
+                    {...form.register("name")}
+                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                  />
+                  {form.formState.errors.name ? (
+                    <p className="text-xs text-red-400">{form.formState.errors.name.message}</p>
                   ) : null}
                 </div>
-                {row.condition ? (
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${CONDITION_COLORS[row.condition] ?? "bg-muted text-muted-foreground"}`}
-                  >
-                    {CONDITION_LABELS[
-                      row.condition as keyof typeof CONDITION_LABELS
-                    ] ?? row.condition}
-                  </span>
-                ) : null}
+
+                {/* Brand */}
+                <div className="space-y-1.5">
+                  <label htmlFor="gear-brand" className="text-sm font-medium text-stone-300">
+                    Brand
+                  </label>
+                  <input
+                    id="gear-brand"
+                    autoComplete="off"
+                    {...form.register("brand")}
+                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                  />
+                  <div className="flex flex-wrap gap-1">
+                    {POPULAR_BRANDS.slice(0, 8).map((brand) => (
+                      <button
+                        key={brand}
+                        type="button"
+                        onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
+                        className="rounded-full border border-white/[0.06] bg-stone-800/50 px-2 py-0.5 text-[11px] text-stone-400 transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
+                      >
+                        {brand}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Model */}
+                <div className="space-y-1.5">
+                  <label htmlFor="gear-model" className="text-sm font-medium text-stone-300">
+                    Model
+                  </label>
+                  <input
+                    id="gear-model"
+                    autoComplete="off"
+                    {...form.register("model")}
+                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                  />
+                </div>
+
+                {/* Category */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-stone-300">Category</label>
+                  <Controller
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <select
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-9 w-full appearance-none rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                      >
+                        <option value="" disabled>
+                          Select category
+                        </option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                </div>
+
+                {/* Condition */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-stone-300">Condition</label>
+                  <Controller
+                    control={form.control}
+                    name="condition"
+                    render={({ field }) => (
+                      <select
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-9 w-full appearance-none rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                      >
+                        {GEAR_CONDITIONS.map((c) => (
+                          <option key={c} value={c}>
+                            {CONDITION_LABELS[c]}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                </div>
+
+                {/* Weight */}
+                <div className="space-y-1.5">
+                  <label htmlFor="gear-weight" className="text-sm font-medium text-stone-300">
+                    Weight
+                  </label>
+                  <input
+                    id="gear-weight"
+                    inputMode="decimal"
+                    placeholder="e.g. 2.5 (kg)"
+                    {...form.register("weight")}
+                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                  />
+                </div>
               </div>
 
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                {row.categories?.name ? (
-                  <span className="flex items-center gap-1">
-                    <Tag size={13} />
-                    {row.categories.name}
-                  </span>
-                ) : null}
-                {row.weight != null ? (
-                  <span className="flex items-center gap-1">
-                    <Scale size={13} />
-                    {row.weight} kg
-                  </span>
-                ) : null}
+              {/* Notes */}
+              <div className="space-y-1.5">
+                <label htmlFor="gear-notes" className="text-sm font-medium text-stone-300">
+                  Notes
+                </label>
+                <textarea
+                  id="gear-notes"
+                  rows={3}
+                  {...form.register("notes")}
+                  className="w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-2 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                />
               </div>
 
-              {row.notes ? (
-                <p className="line-clamp-2 text-sm text-muted-foreground/80">
-                  {row.notes}
+              {formError ? (
+                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                  {formError}
                 </p>
               ) : null}
             </div>
-          ))}
+
+            <div className="flex justify-end border-t border-white/[0.06] px-5 py-3">
+              <button
+                type="submit"
+                disabled={submitting || categories.length === 0}
+                className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-5 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+              >
+                {submitting ? "Saving..." : "Add item"}
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
 
-      {/* Quick add */}
-      <QuickAdd categories={categories} />
-
-      {/* Add gear form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus size={18} />
-            Add gear
-          </CardTitle>
-          <CardDescription>
-            {categories.length === 0
-              ? "Add rows to the categories table in Supabase to enable the category dropdown."
-              : "Save a new item to your inventory."}
-          </CardDescription>
-        </CardHeader>
-        <form
-          onSubmit={form.handleSubmit(async (values) => {
-            setFormError(null);
-            setSubmitting(true);
-            try {
-              const result = await addGearItem(values);
-              if (!result.ok) {
-                setFormError(result.message);
-                return;
-              }
-              form.reset({
-                ...defaultValues,
-                category_id: values.category_id,
-                condition: values.condition,
-              });
-              router.refresh();
-            } finally {
-              setSubmitting(false);
-            }
-          })}
-        >
-          <CardContent className="space-y-2">
-            <FieldSet>
-              <FieldLegend>Details</FieldLegend>
-              <FieldGroup className="gap-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                <Field data-invalid={!!form.formState.errors.name}>
-                  <FieldLabel htmlFor="gear-name">Name</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="gear-name"
-                      autoComplete="off"
-                      aria-invalid={!!form.formState.errors.name}
-                      {...form.register("name")}
-                    />
-                    <FieldError errors={[form.formState.errors.name]} />
-                  </FieldContent>
-                </Field>
-
-                <Field data-invalid={!!form.formState.errors.brand}>
-                  <FieldLabel htmlFor="gear-brand">Brand</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="gear-brand"
-                      autoComplete="off"
-                      aria-invalid={!!form.formState.errors.brand}
-                      {...form.register("brand")}
-                    />
-                    <div className="flex flex-wrap gap-1">
-                      {POPULAR_BRANDS.slice(0, 8).map((brand) => (
-                        <button
-                          key={brand}
-                          type="button"
-                          onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
-                          className="rounded-full border bg-background px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                        >
-                          {brand}
-                        </button>
-                      ))}
-                    </div>
-                    <FieldError errors={[form.formState.errors.brand]} />
-                  </FieldContent>
-                </Field>
-
-                <Field data-invalid={!!form.formState.errors.model}>
-                  <FieldLabel htmlFor="gear-model">Model</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="gear-model"
-                      autoComplete="off"
-                      aria-invalid={!!form.formState.errors.model}
-                      {...form.register("model")}
-                    />
-                    <FieldError errors={[form.formState.errors.model]} />
-                  </FieldContent>
-                </Field>
-
-                <Field data-invalid={!!form.formState.errors.category_id}>
-                  <FieldLabel>Category</FieldLabel>
-                  <FieldContent>
-                    <Controller
-                      control={form.control}
-                      name="category_id"
-                      render={({ field, fieldState }) => (
-                        <Select
-                          value={field.value || null}
-                          onValueChange={(v) => field.onChange(v ?? "")}
-                        >
-                          <SelectTrigger
-                            className="w-full"
-                            aria-invalid={fieldState.invalid}
-                          >
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    <FieldError errors={[form.formState.errors.category_id]} />
-                  </FieldContent>
-                </Field>
-
-                <Field data-invalid={!!form.formState.errors.condition}>
-                  <FieldLabel>Condition</FieldLabel>
-                  <FieldContent>
-                    <Controller
-                      control={form.control}
-                      name="condition"
-                      render={({ field, fieldState }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={(v) =>
-                            field.onChange(
-                              (v ?? "good") as GearItemFormValues["condition"],
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            className="w-full"
-                            aria-invalid={fieldState.invalid}
-                          >
-                            <SelectValue placeholder="Condition" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {GEAR_CONDITIONS.map((c) => (
-                              <SelectItem key={c} value={c}>
-                                {CONDITION_LABELS[c]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    <FieldError errors={[form.formState.errors.condition]} />
-                  </FieldContent>
-                </Field>
-
-                <Field data-invalid={!!form.formState.errors.weight}>
-                  <FieldLabel htmlFor="gear-weight">Weight</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id="gear-weight"
-                      inputMode="decimal"
-                      placeholder="e.g. 2.5 (kg)"
-                      aria-invalid={!!form.formState.errors.weight}
-                      {...form.register("weight")}
-                    />
-                    <FieldError errors={[form.formState.errors.weight]} />
-                  </FieldContent>
-                </Field>
-                </div>
-              </FieldGroup>
-
-              <Field data-invalid={!!form.formState.errors.notes}>
-                <FieldLabel htmlFor="gear-notes">Notes</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="gear-notes"
-                    rows={3}
-                    className="min-h-0"
-                    aria-invalid={!!form.formState.errors.notes}
-                    {...form.register("notes")}
-                  />
-                  <FieldError errors={[form.formState.errors.notes]} />
-                </FieldContent>
-              </Field>
-            </FieldSet>
-
-            {formError ? (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-                {formError}
-              </p>
-            ) : null}
-          </CardContent>
-          <CardFooter className="justify-end border-t-0 pt-0">
-            <Button type="submit" disabled={submitting || categories.length === 0}>
-              {submitting ? "Saving..." : "Add item"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+      {/* ── Detail overlay ── */}
+      <GearDetailOverlay
+        item={selectedItem}
+        categories={categories}
+        onClose={() => setSelectedItem(null)}
+      />
     </div>
   );
 }

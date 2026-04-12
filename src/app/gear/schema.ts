@@ -16,6 +16,7 @@ export const gearItemFormSchema = z.object({
   condition: z.enum(GEAR_CONDITIONS),
   weight: z.string(),
   notes: z.string(),
+  tags: z.array(z.string()),
 });
 
 export type GearItemFormValues = z.infer<typeof gearItemFormSchema>;
@@ -29,14 +30,30 @@ export const CONDITION_LABELS: Record<(typeof GEAR_CONDITIONS)[number], string> 
     poor: "Poor",
   };
 
+export const CONDITION_ORDER: Record<string, number> = {
+  new: 0,
+  like_new: 1,
+  good: 2,
+  fair: 3,
+  poor: 4,
+};
+
 export const bulkGearItemSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  brand: z.union([z.string(), z.null()]),
-  category_id: z.union([z.string().uuid(), z.null()]),
+  brand: z.any(),
+  category_id: z.any(),
   condition: z.enum(GEAR_CONDITIONS),
-  weight: z.union([z.number(), z.null()]),
+  weight: z.any(),
+  tags: z.any(),
 });
 
-export type BulkGearItem = z.infer<typeof bulkGearItemSchema>;
+export type BulkGearItem = {
+  name: string;
+  brand: string | null;
+  category_id: string | null;
+  condition: (typeof GEAR_CONDITIONS)[number];
+  weight: number | null;
+  tags?: string[];
+};
 
 export const bulkGearItemsSchema = z.array(bulkGearItemSchema).min(1).max(50);

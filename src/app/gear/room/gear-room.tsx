@@ -5,25 +5,15 @@ import { useMemo, useState } from "react";
 import { CATEGORY_ICONS } from "../catalog";
 import type { CategoryRow, GearItemRow } from "../gear-client";
 import { GearRoomCard } from "./gear-room-card";
-import { GearRoomDetail } from "./gear-room-detail";
 
 type GearRoomProps = {
   items: GearItemRow[];
   categories: CategoryRow[];
+  onSelectItem: (item: GearItemRow) => void;
 };
 
-const ROOM_BG = [
-  // Overhead warm light
-  "radial-gradient(ellipse 60% 35% at 50% 0%, rgba(251,191,36,0.07) 0%, transparent 70%)",
-  // Pegboard dot pattern
-  "radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
-  // Base
-  "rgb(28, 25, 23)",
-].join(", ");
-
-export function GearRoom({ items, categories }: GearRoomProps) {
+export function GearRoom({ items, categories, onSelectItem }: GearRoomProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [selectedItem, setSelectedItem] = useState<GearItemRow | null>(null);
 
   // Group items by category
   const grouped = useMemo(() => {
@@ -34,42 +24,28 @@ export function GearRoom({ items, categories }: GearRoomProps) {
       if (arr) arr.push(item);
       else map.set(key, [item]);
     }
-    // Sort categories to match DB order
     const catOrder = categories.map((c) => c.name);
     const sorted = new Map<string, GearItemRow[]>();
     for (const name of catOrder) {
       const arr = map.get(name);
       if (arr) sorted.set(name, arr);
     }
-    // Add "Other" / uncategorized at the end
     const other = map.get("Other");
     if (other && !sorted.has("Other")) sorted.set("Other", other);
     return sorted;
   }, [items, categories]);
 
-  // Categories that have items
-  const activeCats = useMemo(
-    () => Array.from(grouped.keys()),
-    [grouped],
-  );
+  const activeCats = useMemo(() => Array.from(grouped.keys()), [grouped]);
 
-  // Filtered items for single-category view
   const filteredItems = useMemo(() => {
     if (activeCategory === "all") return null;
     return grouped.get(activeCategory) ?? [];
   }, [activeCategory, grouped]);
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl"
-      style={{
-        background: ROOM_BG,
-        backgroundSize: "100% 100%, 20px 20px, 100% 100%",
-        minHeight: "32rem",
-      }}
-    >
+    <div className="relative overflow-hidden rounded-2xl border border-white/[0.06]">
       {/* Category nav */}
-      <nav className="sticky top-0 z-30 flex items-center gap-2 overflow-x-auto border-b border-white/[0.06] bg-stone-900/80 px-4 py-3 backdrop-blur-md scrollbar-thin scrollbar-thumb-stone-700">
+      <nav className="sticky top-0 z-30 flex items-center gap-2 overflow-x-auto border-b border-white/[0.06] bg-stone-900/80 px-4 py-3 backdrop-blur-md">
         <button
           type="button"
           onClick={() => setActiveCategory("all")}
@@ -123,25 +99,22 @@ export function GearRoom({ items, categories }: GearRoomProps) {
             </div>
           </div>
         ) : filteredItems ? (
-          /* Single category view */
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredItems.map((item) => (
               <GearRoomCard
                 key={item.id}
                 item={item}
-                onClick={() => setSelectedItem(item)}
+                onClick={() => onSelectItem(item)}
               />
             ))}
           </div>
         ) : (
-          /* All categories — lane view */
           <div className="space-y-8">
             {activeCats.map((cat) => {
               const catItems = grouped.get(cat)!;
               const Icon = CATEGORY_ICONS[cat];
               return (
                 <section key={cat}>
-                  {/* Lane header */}
                   <div className="mb-3 flex items-center gap-2 px-1">
                     {Icon ? (
                       <Icon size={18} className="text-amber-400/80" />
@@ -151,7 +124,6 @@ export function GearRoom({ items, categories }: GearRoomProps) {
                       ({catItems.length})
                     </span>
                   </div>
-                  {/* Lane backlight + items grid */}
                   <div className="relative">
                     <div
                       aria-hidden
@@ -162,7 +134,7 @@ export function GearRoom({ items, categories }: GearRoomProps) {
                         <GearRoomCard
                           key={item.id}
                           item={item}
-                          onClick={() => setSelectedItem(item)}
+                          onClick={() => onSelectItem(item)}
                         />
                       ))}
                     </div>
@@ -173,12 +145,6 @@ export function GearRoom({ items, categories }: GearRoomProps) {
           </div>
         )}
       </div>
-
-      {/* Detail overlay */}
-      <GearRoomDetail
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
-      />
     </div>
   );
 }

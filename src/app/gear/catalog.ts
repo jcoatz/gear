@@ -144,6 +144,15 @@ export const GEAR_PACKAGES: GearPackage[] = [
   },
 ];
 
+export const PACKAGE_TAG_MAP: Record<string, string[]> = {
+  backpacking: ["Backpacking", "All-Season"],
+  "day-hiking": ["Day Hiking", "All-Season", "Temperate"],
+  "winter-camping": ["Backpacking", "Winter", "Cold & Snow"],
+  "trail-running": ["Trail Running", "Summer"],
+  "car-camping": ["Car Camping", "All-Season", "Temperate"],
+  climbing: ["Climbing", "All-Season"],
+};
+
 export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Tents & Shelters": Tent,
   "Sleep Systems": Moon,
