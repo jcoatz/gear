@@ -15,15 +15,24 @@ export default async function ActivitiesPage() {
     redirect("/login?next=/activities");
   }
 
-  // Fetch user's activity selections
-  const { data: userActivities } = await supabase
-    .from("user_activities")
-    .select("activity_slug, skill_level");
-
-  // Fetch user's gear for badge computation
-  const { data: gearItems } = await supabase
-    .from("gear_items")
-    .select("name, category_id, categories ( name )");
+  // Fetch in parallel
+  const [
+    { data: userActivities },
+    { data: gearItems },
+    { data: categories },
+  ] = await Promise.all([
+    supabase
+      .from("user_activities")
+      .select("activity_slug, skill_level"),
+    supabase
+      .from("gear_items")
+      .select("id, name, brand, model, condition, weight, price, notes, tags, wishlist, category_id, categories ( name )")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("categories")
+      .select("id, name")
+      .order("name"),
+  ]);
 
   const gear = (gearItems ?? []).map((g) => {
     const cats = g.categories as
@@ -31,10 +40,20 @@ export default async function ActivitiesPage() {
       | { name: string }[]
       | null;
     return {
-      name: g.name,
-      categoryName: Array.isArray(cats)
-        ? (cats[0]?.name ?? null)
-        : (cats?.name ?? null),
+      id: g.id as string,
+      name: g.name as string,
+      brand: g.brand as string | null,
+      model: g.model as string | null,
+      condition: g.condition as string | null,
+      weight: g.weight as number | null,
+      price: (g.price ?? null) as number | null,
+      notes: g.notes as string | null,
+      tags: (g.tags ?? []) as string[],
+      wishlist: (g.wishlist ?? false) as boolean,
+      category_id: g.category_id as string | null,
+      categories: Array.isArray(cats)
+        ? (cats[0] ?? null)
+        : cats,
     };
   });
 
@@ -49,6 +68,7 @@ export default async function ActivitiesPage() {
       <ActivitiesClient
         userActivities={activityMap}
         userGear={gear}
+        categories={categories ?? []}
       />
     </div>
   );

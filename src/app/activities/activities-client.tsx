@@ -1,23 +1,20 @@
 "use client";
 
 import {
-  AlertCircle,
   Award,
   Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Circle,
-  Heart,
+  ExternalLink,
   Loader2,
   Minus,
+  Plus,
   Shield,
-  ShoppingBag,
   Sparkles,
-  X,
   Zap,
 } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -27,22 +24,40 @@ import {
   SKILL_COLORS,
   type SkillLevel,
 } from "./activity-data";
-import { computeBadge, BADGE_CONFIG, BADGE_LABELS, type BadgeLevel } from "./badges";
+import { computeBadge, BADGE_CONFIG, BADGE_LABELS } from "./badges";
 import { setActivitySkill, removeActivity } from "./actions";
+import { quickAddGearItem } from "@/app/gear/actions";
+import { GearDetailOverlay } from "@/app/gear/detail/gear-detail-overlay";
+import type { GearItemRow, CategoryRow } from "@/app/gear/gear-client";
 
 type ActivitiesClientProps = {
   userActivities: Record<string, string>;
-  userGear: { name: string; categoryName: string | null }[];
+  userGear: GearItemRow[];
+  categories: CategoryRow[];
 };
 
-export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientProps) {
+export function ActivitiesClient({ userActivities, userGear, categories }: ActivitiesClientProps) {
   const router = useRouter();
   const [activities, setActivities] = useState(userActivities);
+  const [gear, setGear] = useState(userGear);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(ACTIVITY_GROUPS.map((g) => g.id)),
   );
   const [saving, setSaving] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [addingKeyword, setAddingKeyword] = useState<string | null>(null);
+  const [selectedGearItem, setSelectedGearItem] = useState<GearItemRow | null>(null);
+
+  // Simplified gear for badge computation (needs id + name + categoryName)
+  const badgeGear = useMemo(
+    () =>
+      gear.map((g) => ({
+        id: g.id,
+        name: g.name,
+        categoryName: g.categories?.name ?? null,
+      })),
+    [gear],
+  );
 
   function toggleGroup(groupId: string) {
     setExpandedGroups((prev) => {
@@ -74,24 +89,57 @@ export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientP
     router.refresh();
   }
 
+  async function handleQuickAdd(keyword: string) {
+    setAddingKeyword(keyword);
+    const name = keyword
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    const result = await quickAddGearItem(name);
+    if (result.ok) {
+      // Optimistic: add to local gear so badge updates immediately
+      const tempItem: GearItemRow = {
+        id: `temp-${Date.now()}`,
+        name,
+        brand: null,
+        model: null,
+        condition: "good",
+        weight: null,
+        price: null,
+        notes: null,
+        tags: [],
+        wishlist: false,
+        category_id: null,
+        categories: null,
+      };
+      setGear((prev) => [...prev, tempItem]);
+    }
+    setAddingKeyword(null);
+    router.refresh();
+  }
+
+  function handleGearClick(itemId: string) {
+    const item = gear.find((g) => g.id === itemId);
+    if (item) setSelectedGearItem(item);
+  }
+
   // Stats
   const totalActive = Object.keys(activities).length;
   const proCount = Object.values(activities).filter((l) => l === "pro").length;
   const wantToTryCount = Object.values(activities).filter((l) => l === "want_to_try").length;
 
-  // Badge summary
   const gearReadyCount = useMemo(() => {
     let count = 0;
     for (const group of ACTIVITY_GROUPS) {
       for (const activity of group.activities) {
         if (activities[activity.slug]) {
-          const badge = computeBadge(activity, userGear);
+          const badge = computeBadge(activity, badgeGear);
           if (badge.level === "ready") count++;
         }
       }
     }
     return count;
-  }, [activities, userGear]);
+  }, [activities, badgeGear]);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:p-6">
@@ -165,7 +213,7 @@ export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientP
                   {group.activities.map((activity) => {
                     const ActivityIcon = activity.icon;
                     const skillLevel = activities[activity.slug] as SkillLevel | undefined;
-                    const badge = computeBadge(activity, userGear);
+                    const badge = computeBadge(activity, badgeGear);
                     const isSelected = selectedActivity === activity.slug;
                     const isSaving = saving === activity.slug;
                     const badgeConf = BADGE_CONFIG[badge.level];
@@ -309,18 +357,35 @@ export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientP
                                       }`}>
                                         {detail.keyword}
                                       </span>
-                                      {detail.matched && detail.matchedItem ? (
-                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate max-w-[120px]">
-                                          {detail.matchedItem}
-                                        </span>
-                                      ) : (
-                                        <Link
-                                          href="/gear"
-                                          className="flex items-center gap-0.5 text-[10px] text-g-accent hover:underline shrink-0"
+                                      {detail.matched && detail.matchedItemId ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGearClick(detail.matchedItemId!);
+                                          }}
+                                          className="flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors shrink-0 max-w-[140px]"
                                         >
-                                          <ShoppingBag size={9} />
-                                          Add
-                                        </Link>
+                                          <ExternalLink size={8} className="shrink-0" />
+                                          <span className="truncate">{detail.matchedItem}</span>
+                                        </button>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleQuickAdd(detail.keyword);
+                                          }}
+                                          disabled={addingKeyword === detail.keyword}
+                                          className="flex items-center gap-0.5 rounded-md border border-g-border-active bg-g-accent-surface px-1.5 py-0.5 text-[10px] font-medium text-g-accent hover:bg-g-accent-hover transition-colors shrink-0 disabled:opacity-50"
+                                        >
+                                          {addingKeyword === detail.keyword ? (
+                                            <Loader2 size={9} className="animate-spin" />
+                                          ) : (
+                                            <Plus size={9} />
+                                          )}
+                                          Add to gear
+                                        </button>
                                       )}
                                     </div>
                                   ))}
@@ -350,6 +415,16 @@ export function ActivitiesClient({ userActivities, userGear }: ActivitiesClientP
           );
         })}
       </div>
+
+      {/* Gear detail overlay */}
+      <GearDetailOverlay
+        item={selectedGearItem}
+        categories={categories}
+        onClose={() => {
+          setSelectedGearItem(null);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

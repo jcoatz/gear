@@ -311,3 +311,36 @@ export async function updateGearItemTags(
   revalidatePath("/gear");
   return { ok: true };
 }
+
+export async function quickAddGearItem(
+  name: string,
+): Promise<ActionResult> {
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return { ok: false, message: "Name is required." };
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "You must be signed in." };
+  }
+
+  const { error } = await supabase.from("gear_items").insert({
+    user_id: user.id,
+    name: name.trim(),
+    condition: "good",
+    tags: [],
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/gear");
+  revalidatePath("/activities");
+  return { ok: true };
+}

@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { GEAR_PACKAGES, PACKAGE_TAG_MAP, type GearPackage } from "./catalog";
 import { addGearItems } from "./actions";
 import type { CategoryRow } from "./gear-client";
@@ -116,14 +115,14 @@ export function QuickAdd({ categories }: QuickAddProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-amber-500/20 bg-stone-900/40 px-5 py-4 text-left backdrop-blur-md transition-all hover:border-amber-500/40 hover:bg-stone-900/60"
+        className="group flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-g-accent/20 bg-g-card/40 px-5 py-4 text-left backdrop-blur-md transition-all hover:border-g-accent/40 hover:bg-g-card/60"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 transition-transform group-hover:scale-110">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent transition-transform group-hover:scale-110">
           <Sparkles size={20} />
         </div>
         <div>
-          <p className="font-semibold text-stone-100">Quick Add</p>
-          <p className="text-sm text-stone-500">
+          <p className="font-semibold text-g-text">Quick Add</p>
+          <p className="text-sm text-g-text-3">
             Choose from gear packages by activity — add multiple items at once
           </p>
         </div>
@@ -132,22 +131,22 @@ export function QuickAdd({ categories }: QuickAddProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
+    <div className="overflow-hidden rounded-xl border border-g-border bg-g-card backdrop-blur-md">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-stone-900/80 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-g-border bg-g-card px-4 py-3">
         <div className="flex items-center gap-2">
           {selectedPkg ? (
             <button
               type="button"
               onClick={goBack}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
             >
               <ArrowLeft size={18} />
             </button>
           ) : null}
           <div className="flex items-center gap-2">
-            <Sparkles size={18} className="text-amber-400" />
-            <span className="font-semibold text-stone-100">
+            <Sparkles size={18} className="text-g-accent" />
+            <span className="font-semibold text-g-text">
               {selectedPkg ? selectedPkg.name : "Quick Add"}
             </span>
           </div>
@@ -155,7 +154,7 @@ export function QuickAdd({ categories }: QuickAddProps) {
         <button
           type="button"
           onClick={close}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
         >
           <X size={18} />
         </button>
@@ -167,7 +166,7 @@ export function QuickAdd({ categories }: QuickAddProps) {
           className={`mx-4 mt-4 rounded-lg border px-3 py-2 text-sm ${
             result.type === "success"
               ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              : "border-red-500/30 bg-red-500/10 text-red-400"
+              : "border-g-error-border bg-g-error-bg text-g-error-text"
           }`}
         >
           {result.message}
@@ -184,20 +183,20 @@ export function QuickAdd({ categories }: QuickAddProps) {
                 key={pkg.id}
                 type="button"
                 onClick={() => selectPackage(pkg)}
-                className="group/pkg flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-stone-800/40 p-4 text-left transition-all hover:border-amber-500/30 hover:bg-stone-800/70 hover:shadow-lg hover:shadow-amber-500/5"
+                className="group/pkg flex flex-col gap-2 rounded-xl border border-g-border bg-g-raised/40 p-4 text-left transition-all hover:border-g-border-active hover:bg-g-raised hover:shadow-lg hover:shadow-g-accent/5"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 transition-transform group-hover/pkg:scale-110">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent transition-transform group-hover/pkg:scale-110">
                     <Icon size={20} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold leading-snug text-stone-100">{pkg.name}</p>
-                    <p className="text-xs text-stone-500">
+                    <p className="font-semibold leading-snug text-g-text">{pkg.name}</p>
+                    <p className="text-xs text-g-text-3">
                       {pkg.items.length} items
                     </p>
                   </div>
                 </div>
-                <p className="text-sm text-stone-400">{pkg.description}</p>
+                <p className="text-sm text-g-text-3">{pkg.description}</p>
               </button>
             );
           })}
@@ -206,26 +205,26 @@ export function QuickAdd({ categories }: QuickAddProps) {
         /* Item checklist */
         <div className="flex flex-col">
           {/* Select all bar */}
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
+          <div className="flex items-center justify-between border-b border-g-border px-4 py-2">
             <button
               type="button"
               onClick={toggleAll}
-              className="flex items-center gap-2 text-sm font-medium text-stone-400 transition-colors hover:text-stone-200"
+              className="flex items-center gap-2 text-sm font-medium text-g-text-3 transition-colors hover:text-g-text"
             >
               {allChecked ? (
-                <CheckSquare size={16} className="text-amber-400" />
+                <CheckSquare size={16} className="text-g-accent" />
               ) : (
                 <Square size={16} />
               )}
               {allChecked ? "Deselect all" : "Select all"}
             </button>
-            <span className="text-sm text-stone-500">
+            <span className="text-sm text-g-text-3">
               {checkedCount} of {checkedItems.length} selected
             </span>
           </div>
 
           {/* Items */}
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-g-border/50">
             {selectedPkg.items.map((template, index) => {
               const checked = checkedItems[index]?.checked ?? false;
               const resolvedCategory = categoryMap.has(template.categoryName);
@@ -236,16 +235,16 @@ export function QuickAdd({ categories }: QuickAddProps) {
                   onClick={() => toggleItem(index)}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
                     checked
-                      ? "bg-stone-800/40"
+                      ? "bg-g-raised/40"
                       : "bg-transparent opacity-50"
-                  } hover:bg-stone-800/60`}
+                  } hover:bg-g-raised/60`}
                 >
                   {/* Checkbox */}
                   <div
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
                       checked
-                        ? "border-amber-500 bg-amber-500/20 text-amber-300"
-                        : "border-stone-600 bg-stone-800"
+                        ? "border-g-accent bg-g-accent-surface text-g-accent"
+                        : "border-g-input-border bg-g-input"
                     }`}
                   >
                     {checked ? <Check size={14} /> : null}
@@ -253,10 +252,10 @@ export function QuickAdd({ categories }: QuickAddProps) {
 
                   {/* Item info */}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium leading-snug text-stone-200">
+                    <p className="truncate font-medium leading-snug text-g-text">
                       {template.name}
                     </p>
-                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-500">
+                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-g-text-3">
                       {template.suggestedBrand ? (
                         <span className="flex items-center gap-1">
                           <Package size={11} />
@@ -285,11 +284,11 @@ export function QuickAdd({ categories }: QuickAddProps) {
           </div>
 
           {/* Action bar */}
-          <div className="flex items-center justify-between border-t border-white/[0.06] bg-stone-900/80 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-g-border bg-g-card px-4 py-3">
             <button
               type="button"
               onClick={goBack}
-              className="rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-1.5 text-sm text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+              className="rounded-lg border border-g-input-border bg-g-input px-3 py-1.5 text-sm text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
             >
               Back
             </button>
@@ -297,7 +296,7 @@ export function QuickAdd({ categories }: QuickAddProps) {
               type="button"
               disabled={checkedCount === 0 || submitting}
               onClick={handleSubmit}
-              className="rounded-lg bg-amber-500/20 px-4 py-1.5 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+              className="rounded-lg bg-g-accent-hover px-4 py-1.5 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
             >
               {submitting
                 ? "Adding..."

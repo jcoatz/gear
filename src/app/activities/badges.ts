@@ -5,8 +5,10 @@ export type BadgeLevel = "none" | "some" | "most" | "ready";
 export type GearMatch = {
   keyword: string;
   matched: boolean;
-  /** The user's gear item that matched, if any */
+  /** The user's gear item name that matched, if any */
   matchedItem: string | null;
+  /** The user's gear item ID that matched, if any */
+  matchedItemId: string | null;
 };
 
 export type Badge = {
@@ -34,6 +36,7 @@ export const BADGE_LABELS: Record<BadgeLevel, string> = {
 };
 
 type GearItem = {
+  id: string;
   name: string;
   categoryName: string | null;
 };
@@ -60,9 +63,9 @@ export function computeBadge(activity: Activity, userGear: GearItem[]): Badge {
 
     if (matchedGear) {
       matchedCount++;
-      details.push({ keyword, matched: true, matchedItem: matchedGear.name });
+      details.push({ keyword, matched: true, matchedItem: matchedGear.name, matchedItemId: matchedGear.id });
     } else {
-      details.push({ keyword, matched: false, matchedItem: null });
+      details.push({ keyword, matched: false, matchedItem: null, matchedItemId: null });
     }
   }
 
