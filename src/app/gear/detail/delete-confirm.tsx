@@ -33,20 +33,20 @@ export function DeleteConfirm({ item, onBack, onDeleted }: DeleteConfirmProps) {
         <button
           type="button"
           onClick={onBack}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
         >
           <ArrowLeft size={18} />
         </button>
-        <h2 className="text-lg font-bold text-stone-100">Delete item</h2>
+        <h2 className="text-lg font-bold text-g-text">Delete item</h2>
       </div>
 
-      <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/[0.07] p-4">
-        <AlertTriangle size={20} className="mt-0.5 shrink-0 text-red-400" />
+      <div className="flex items-start gap-3 rounded-xl border border-g-error-border bg-g-error-bg p-4">
+        <AlertTriangle size={20} className="mt-0.5 shrink-0 text-g-error-text" />
         <div>
-          <p className="font-medium text-stone-200">
+          <p className="font-medium text-g-text">
             Delete &ldquo;{item.name}&rdquo;?
           </p>
-          <p className="mt-1 text-sm text-stone-400">
+          <p className="mt-1 text-sm text-g-text-2">
             This action cannot be undone. The item will be permanently removed
             from your gear inventory.
           </p>
@@ -54,7 +54,7 @@ export function DeleteConfirm({ item, onBack, onDeleted }: DeleteConfirmProps) {
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+        <p className="mt-4 rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
           {error}
         </p>
       ) : null}
@@ -63,7 +63,7 @@ export function DeleteConfirm({ item, onBack, onDeleted }: DeleteConfirmProps) {
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg border border-white/[0.08] bg-stone-800/60 px-4 py-2 text-sm text-stone-300 transition-colors hover:bg-stone-800"
+          className="rounded-lg border border-g-border bg-g-raised px-4 py-2 text-sm text-g-text-2 transition-colors hover:bg-g-raised"
         >
           Cancel
         </button>
@@ -71,7 +71,7 @@ export function DeleteConfirm({ item, onBack, onDeleted }: DeleteConfirmProps) {
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="flex items-center gap-1.5 rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-g-error-bg px-4 py-2 text-sm font-medium text-g-error-text transition-colors hover:bg-red-500/30 disabled:opacity-50"
         >
           {deleting ? (
             <Loader2 size={14} className="animate-spin" />

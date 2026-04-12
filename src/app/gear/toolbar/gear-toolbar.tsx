@@ -34,14 +34,14 @@ export function GearToolbar({
           onClick={() => setFiltersOpen((v) => !v)}
           className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors ${
             filtersOpen || filters.hasActiveFilters
-              ? "border-amber-500/30 bg-amber-500/15 text-amber-300"
-              : "border-white/[0.08] bg-stone-800/60 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+              ? "border-g-border-active bg-g-accent-surface text-g-accent"
+              : "border-g-border bg-g-raised text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
           }`}
         >
           <Filter size={14} />
           <span className="hidden sm:inline">Filter</span>
           {filters.activeTags.length > 0 ? (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500/30 px-1 text-[10px] font-bold text-amber-300">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-g-accent-hover px-1 text-[10px] font-bold text-g-accent">
               {filters.activeTags.length}
             </span>
           ) : null}
@@ -56,28 +56,28 @@ export function GearToolbar({
       {/* Active filters summary */}
       {filters.hasActiveFilters ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-g-text-3">
             {filteredCount} of {totalCount} items
           </span>
           {filters.categoryFilter ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-stone-800/80 px-2.5 py-0.5 text-xs text-stone-300">
+            <span className="inline-flex items-center gap-1 rounded-full border border-g-border bg-g-raised px-2.5 py-0.5 text-xs text-g-text-2">
               {filters.categoryFilter}
               <button
                 type="button"
                 onClick={() => filters.setCategoryFilter(null)}
-                className="text-stone-500 hover:text-stone-300"
+                className="text-g-text-3 hover:text-g-text-2"
               >
                 <X size={10} />
               </button>
             </span>
           ) : null}
           {filters.conditionFilter ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-stone-800/80 px-2.5 py-0.5 text-xs text-stone-300">
+            <span className="inline-flex items-center gap-1 rounded-full border border-g-border bg-g-raised px-2.5 py-0.5 text-xs text-g-text-2">
               {filters.conditionFilter}
               <button
                 type="button"
                 onClick={() => filters.setConditionFilter(null)}
-                className="text-stone-500 hover:text-stone-300"
+                className="text-g-text-3 hover:text-g-text-2"
               >
                 <X size={10} />
               </button>
@@ -86,13 +86,13 @@ export function GearToolbar({
           {filters.activeTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300"
+              className="inline-flex items-center gap-1 rounded-full border border-g-border-active bg-g-accent-surface px-2.5 py-0.5 text-xs text-g-accent"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => filters.toggleTag(tag)}
-                className="text-amber-400/60 hover:text-amber-300"
+                className="text-g-accent/60 hover:text-g-accent"
               >
                 <X size={10} />
               </button>
@@ -101,7 +101,7 @@ export function GearToolbar({
           <button
             type="button"
             onClick={filters.clearFilters}
-            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-stone-500 transition-colors hover:text-stone-300"
+            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-g-text-3 transition-colors hover:text-g-text-2"
           >
             <RotateCcw size={10} />
             Clear all

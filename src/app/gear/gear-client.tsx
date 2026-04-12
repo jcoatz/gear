@@ -9,7 +9,6 @@ import {
   Package,
   Plus,
   Scale,
-  Star,
   Tag,
   Warehouse,
 } from "lucide-react";
@@ -101,7 +100,7 @@ function GearGridCard({
         style={style}
         {...handlers}
         onClick={onClick}
-        className="group/card relative cursor-pointer rounded-xl border border-white/[0.08] bg-stone-900/60 backdrop-blur-md transition-shadow hover:shadow-lg hover:shadow-amber-500/5"
+        className="group/card relative cursor-pointer rounded-xl border border-g-border bg-g-card backdrop-blur-md transition-shadow hover:shadow-lg hover:shadow-amber-500/5"
       >
         {/* Glow */}
         {hovering ? (
@@ -121,7 +120,7 @@ function GearGridCard({
           className={`absolute top-3 right-3 z-20 flex h-7 w-7 items-center justify-center rounded-full transition-all ${
             item.wishlist
               ? "bg-red-500/20 text-red-400"
-              : "bg-stone-800/60 text-stone-600 opacity-0 group-hover/card:opacity-100"
+              : "bg-g-raised text-g-text-4 opacity-0 group-hover/card:opacity-100"
           } hover:scale-110`}
         >
           <Heart size={14} fill={item.wishlist ? "currentColor" : "none"} />
@@ -130,7 +129,7 @@ function GearGridCard({
         <div className="relative z-10 flex flex-col gap-3 p-4">
           {/* Icon + name row */}
           <div className="flex items-start gap-3 pr-8">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
               <Icon size={20} />
             </div>
             <div className="min-w-0 flex-1">
@@ -138,10 +137,10 @@ function GearGridCard({
                 value={item.name}
                 itemId={item.id}
                 field="name"
-                className="truncate font-semibold leading-snug text-stone-100"
+                className="truncate font-semibold leading-snug text-g-text"
               />
               {(item.brand || item.model) ? (
-                <p className="mt-0.5 truncate text-xs text-stone-400">
+                <p className="mt-0.5 truncate text-xs text-g-text-3">
                   {[item.brand, item.model].filter(Boolean).join(" ")}
                 </p>
               ) : null}
@@ -155,7 +154,7 @@ function GearGridCard({
                 const group = getTagGroup(tag);
                 const colors = group
                   ? TAG_GROUP_COLORS_DARK[group]
-                  : { bg: "bg-stone-800", text: "text-stone-400", border: "border-stone-700" };
+                  : { bg: "bg-g-raised", text: "text-g-text-3", border: "border-g-border" };
                 return (
                   <span
                     key={tag}
@@ -166,7 +165,7 @@ function GearGridCard({
                 );
               })}
               {item.tags.length > 3 ? (
-                <span className="rounded-full bg-stone-800/80 px-2 py-0.5 text-[10px] text-stone-500">
+                <span className="rounded-full bg-g-raised px-2 py-0.5 text-[10px] text-g-text-3">
                   +{item.tags.length - 3}
                 </span>
               ) : null}
@@ -174,7 +173,7 @@ function GearGridCard({
           ) : null}
 
           {/* Bottom row */}
-          <div className="flex items-center gap-3 text-xs text-stone-400">
+          <div className="flex items-center gap-3 text-xs text-g-text-3">
             {item.categories?.name ? (
               <span className="flex items-center gap-1">
                 <Tag size={10} />
@@ -188,7 +187,7 @@ function GearGridCard({
               </span>
             ) : null}
             {item.weight != null ? (
-              <span className="flex items-center gap-1 rounded-full bg-stone-800/80 px-2 py-0.5">
+              <span className="flex items-center gap-1 rounded-full bg-g-raised px-2 py-0.5">
                 <Scale size={10} />
                 {item.weight} kg
               </span>
@@ -258,10 +257,10 @@ export function GearClient({
         {/* ── Header ── */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 shadow-sm shadow-amber-500/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent shadow-sm">
               <Backpack size={20} strokeWidth={1.5} />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+            <h1 className="text-2xl font-bold tracking-tight text-g-text">
               My Gear
             </h1>
           </div>
@@ -274,25 +273,25 @@ export function GearClient({
                 className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                   showWishlistOnly
                     ? "border-red-500/30 bg-red-500/15 text-red-400"
-                    : "border-white/[0.06] bg-stone-900/80 text-stone-500 hover:text-stone-300"
+                    : "border-g-border bg-g-card text-g-text-3 hover:text-g-text-2"
                 }`}
               >
                 <Heart size={14} fill={showWishlistOnly ? "currentColor" : "none"} />
                 Wishlist
-                <span className="rounded-full bg-stone-800/80 px-1.5 text-xs">
+                <span className="rounded-full bg-g-raised px-1.5 text-xs">
                   {wishlistCount}
                 </span>
               </button>
             ) : null}
             {/* View toggle */}
-            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-stone-900/80 p-0.5 backdrop-blur-md">
+            <div className="flex items-center gap-0.5 rounded-lg border border-g-border bg-g-card p-0.5 backdrop-blur-md">
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   viewMode === "grid"
-                    ? "bg-stone-800 text-stone-100 shadow-sm"
-                    : "text-stone-500 hover:text-stone-300"
+                    ? "bg-g-raised text-g-text shadow-sm"
+                    : "text-g-text-3 hover:text-g-text-2"
                 }`}
               >
                 <LayoutGrid size={14} />
@@ -303,8 +302,8 @@ export function GearClient({
                 onClick={() => setViewMode("room")}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   viewMode === "room"
-                    ? "bg-stone-800 text-stone-100 shadow-sm"
-                    : "text-stone-500 hover:text-stone-300"
+                    ? "bg-g-raised text-g-text shadow-sm"
+                    : "text-g-text-3 hover:text-g-text-2"
                 }`}
               >
                 <Warehouse size={14} />
@@ -315,44 +314,44 @@ export function GearClient({
         </header>
 
         {loadError ? (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <p className="rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
             Could not load gear: {loadError}
           </p>
         ) : null}
 
         {/* ── Stats bar ── */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
               <Package size={18} />
             </div>
             <div>
-              <p className="text-2xl font-semibold leading-none text-stone-100">
+              <p className="text-2xl font-semibold leading-none text-g-text">
                 {items.length}
               </p>
-              <p className="mt-0.5 text-xs text-stone-500">Items</p>
+              <p className="mt-0.5 text-xs text-g-text-3">Items</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
               <Scale size={18} />
             </div>
             <div>
-              <p className="text-2xl font-semibold leading-none text-stone-100">
+              <p className="text-2xl font-semibold leading-none text-g-text">
                 {totalWeight > 0 ? totalWeight.toFixed(1) : "0"}
               </p>
-              <p className="mt-0.5 text-xs text-stone-500">Total kg</p>
+              <p className="mt-0.5 text-xs text-g-text-3">Total kg</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3 backdrop-blur-md">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
               <Tag size={18} />
             </div>
             <div>
-              <p className="text-2xl font-semibold leading-none text-stone-100">
+              <p className="text-2xl font-semibold leading-none text-g-text">
                 {categoryCount}
               </p>
-              <p className="mt-0.5 text-xs text-stone-500">Categories</p>
+              <p className="mt-0.5 text-xs text-g-text-3">Categories</p>
             </div>
           </div>
         </div>
@@ -376,20 +375,20 @@ export function GearClient({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/[0.1] bg-stone-900/40 px-6 py-16 text-center"
+            className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-g-border bg-g-card/50 px-6 py-16 text-center"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-800/80">
-              <Backpack size={28} className="text-stone-500" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-g-raised">
+              <Backpack size={28} className="text-g-text-3" />
             </div>
             <div>
-              <p className="font-medium text-stone-300">
+              <p className="font-medium text-g-text-2">
                 {items.length === 0
                   ? "No gear yet"
                   : showWishlistOnly
                     ? "No wishlist items"
                     : "No matches"}
               </p>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="mt-1 text-sm text-g-text-3">
                 {items.length === 0
                   ? "Add your first item with the form below to get started."
                   : "Try adjusting your search or filters."}
@@ -416,13 +415,13 @@ export function GearClient({
         <QuickAdd categories={categories} />
 
         {/* ── Add gear form ── */}
-        <div className="rounded-xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
-          <div className="border-b border-white/[0.06] px-5 py-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-stone-100">
-              <Plus size={18} className="text-amber-400" />
+        <div className="rounded-xl border border-g-border bg-g-card backdrop-blur-md">
+          <div className="border-b border-g-border px-5 py-4">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-g-text">
+              <Plus size={18} className="text-g-accent" />
               Add gear
             </h2>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="mt-1 text-sm text-g-text-3">
               {categories.length === 0
                 ? "Add rows to the categories table in Supabase to enable the category dropdown."
                 : "Save a new item to your inventory."}
@@ -453,30 +452,30 @@ export function GearClient({
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Name */}
                 <div className="space-y-1.5">
-                  <label htmlFor="gear-name" className="text-sm font-medium text-stone-300">
+                  <label htmlFor="gear-name" className="text-sm font-medium text-g-text-2">
                     Name
                   </label>
                   <input
                     id="gear-name"
                     autoComplete="off"
                     {...form.register("name")}
-                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                   />
                   {form.formState.errors.name ? (
-                    <p className="text-xs text-red-400">{form.formState.errors.name.message}</p>
+                    <p className="text-xs text-g-error-text">{form.formState.errors.name.message}</p>
                   ) : null}
                 </div>
 
                 {/* Brand */}
                 <div className="space-y-1.5">
-                  <label htmlFor="gear-brand" className="text-sm font-medium text-stone-300">
+                  <label htmlFor="gear-brand" className="text-sm font-medium text-g-text-2">
                     Brand
                   </label>
                   <input
                     id="gear-brand"
                     autoComplete="off"
                     {...form.register("brand")}
-                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                   />
                   <div className="flex flex-wrap gap-1">
                     {POPULAR_BRANDS.slice(0, 8).map((brand) => (
@@ -484,7 +483,7 @@ export function GearClient({
                         key={brand}
                         type="button"
                         onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
-                        className="rounded-full border border-white/[0.06] bg-stone-800/50 px-2 py-0.5 text-[11px] text-stone-400 transition-colors hover:border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
+                        className="rounded-full border border-g-border bg-g-raised px-2 py-0.5 text-[11px] text-g-text-3 transition-colors hover:border-g-border-active hover:bg-g-accent-surface hover:text-g-accent"
                       >
                         {brand}
                       </button>
@@ -494,20 +493,20 @@ export function GearClient({
 
                 {/* Model */}
                 <div className="space-y-1.5">
-                  <label htmlFor="gear-model" className="text-sm font-medium text-stone-300">
+                  <label htmlFor="gear-model" className="text-sm font-medium text-g-text-2">
                     Model
                   </label>
                   <input
                     id="gear-model"
                     autoComplete="off"
                     {...form.register("model")}
-                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                   />
                 </div>
 
                 {/* Category */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-stone-300">Category</label>
+                  <label className="text-sm font-medium text-g-text-2">Category</label>
                   <Controller
                     control={form.control}
                     name="category_id"
@@ -515,7 +514,7 @@ export function GearClient({
                       <select
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value)}
-                        className="h-9 w-full appearance-none rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                        className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                       >
                         <option value="" disabled>
                           Select category
@@ -532,7 +531,7 @@ export function GearClient({
 
                 {/* Condition */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-stone-300">Condition</label>
+                  <label className="text-sm font-medium text-g-text-2">Condition</label>
                   <Controller
                     control={form.control}
                     name="condition"
@@ -540,7 +539,7 @@ export function GearClient({
                       <select
                         value={field.value}
                         onChange={(e) => field.onChange(e.target.value)}
-                        className="h-9 w-full appearance-none rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                        className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                       >
                         {GEAR_CONDITIONS.map((c) => (
                           <option key={c} value={c}>
@@ -554,7 +553,7 @@ export function GearClient({
 
                 {/* Weight */}
                 <div className="space-y-1.5">
-                  <label htmlFor="gear-weight" className="text-sm font-medium text-stone-300">
+                  <label htmlFor="gear-weight" className="text-sm font-medium text-g-text-2">
                     Weight
                   </label>
                   <input
@@ -562,36 +561,36 @@ export function GearClient({
                     inputMode="decimal"
                     placeholder="e.g. 2.5 (kg)"
                     {...form.register("weight")}
-                    className="h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                   />
                 </div>
               </div>
 
               {/* Notes */}
               <div className="space-y-1.5">
-                <label htmlFor="gear-notes" className="text-sm font-medium text-stone-300">
+                <label htmlFor="gear-notes" className="text-sm font-medium text-g-text-2">
                   Notes
                 </label>
                 <textarea
                   id="gear-notes"
                   rows={3}
                   {...form.register("notes")}
-                  className="w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-2 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                  className="w-full rounded-lg border border-g-input-border bg-g-input px-3 py-2 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                 />
               </div>
 
               {formError ? (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                <p className="rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
                   {formError}
                 </p>
               ) : null}
             </div>
 
-            <div className="flex justify-end border-t border-white/[0.06] px-5 py-3">
+            <div className="flex justify-end border-t border-g-border px-5 py-3">
               <button
                 type="submit"
                 disabled={submitting || categories.length === 0}
-                className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-5 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-5 py-2 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
               >
                 {submitting ? "Saving..." : "Add item"}
               </button>

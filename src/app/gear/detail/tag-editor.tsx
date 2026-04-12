@@ -41,11 +41,11 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
         <button
           type="button"
           onClick={onBack}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
         >
           <ArrowLeft size={18} />
         </button>
-        <h2 className="text-lg font-bold text-stone-100">
+        <h2 className="text-lg font-bold text-g-text">
           Edit tags — {item.name}
         </h2>
       </div>
@@ -55,7 +55,7 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
           const colors = TAG_GROUP_COLORS_DARK[group.group];
           return (
             <div key={group.group}>
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-stone-500">
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-g-text-3">
                 {group.group}
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -69,7 +69,7 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
                       className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                         active
                           ? `${colors.border} ${colors.bg} ${colors.text}`
-                          : "border-white/[0.06] bg-stone-800/50 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+                          : "border-g-border bg-g-raised text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
                       }`}
                     >
                       {tag}
@@ -83,7 +83,7 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+        <p className="mt-4 rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
           {error}
         </p>
       ) : null}
@@ -92,7 +92,7 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg border border-white/[0.08] bg-stone-800/60 px-4 py-2 text-sm text-stone-300 transition-colors hover:bg-stone-800"
+          className="rounded-lg border border-g-border bg-g-raised px-4 py-2 text-sm text-g-text-2 transition-colors hover:bg-g-raised"
         >
           Cancel
         </button>
@@ -100,7 +100,7 @@ export function TagEditor({ item, onBack, onSaved }: TagEditorProps) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-4 py-2 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           Save tags

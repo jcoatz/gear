@@ -12,10 +12,10 @@ type FilterChipsProps = {
 
 export function FilterChips({ filters, categories }: FilterChipsProps) {
   return (
-    <div className="space-y-3 rounded-xl border border-white/[0.06] bg-stone-900/60 p-4 backdrop-blur-md">
+    <div className="space-y-3 rounded-xl border border-g-border bg-g-card p-4 backdrop-blur-md">
       {/* Category chips */}
       <div>
-        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-stone-500">
+        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-g-text-3">
           Category
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -30,8 +30,8 @@ export function FilterChips({ filters, categories }: FilterChipsProps) {
                 }
                 className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? "border-amber-500/30 bg-amber-500/15 text-amber-300"
-                    : "border-white/[0.06] bg-stone-800/50 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+                    ? "border-g-border-active bg-g-accent-surface text-g-accent"
+                    : "border-g-border bg-g-raised text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
                 }`}
               >
                 {cat.name}
@@ -43,7 +43,7 @@ export function FilterChips({ filters, categories }: FilterChipsProps) {
 
       {/* Condition chips */}
       <div>
-        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-stone-500">
+        <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-g-text-3">
           Condition
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -58,8 +58,8 @@ export function FilterChips({ filters, categories }: FilterChipsProps) {
                 }
                 className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? "border-amber-500/30 bg-amber-500/15 text-amber-300"
-                    : "border-white/[0.06] bg-stone-800/50 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+                    ? "border-g-border-active bg-g-accent-surface text-g-accent"
+                    : "border-g-border bg-g-raised text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
                 }`}
               >
                 {CONDITION_LABELS[c]}
@@ -74,7 +74,7 @@ export function FilterChips({ filters, categories }: FilterChipsProps) {
         const colors = TAG_GROUP_COLORS_DARK[group.group];
         return (
           <div key={group.group}>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-stone-500">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-g-text-3">
               {group.group}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -88,7 +88,7 @@ export function FilterChips({ filters, categories }: FilterChipsProps) {
                     className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                       active
                         ? `${colors.border} ${colors.bg} ${colors.text}`
-                        : "border-white/[0.06] bg-stone-800/50 text-stone-400 hover:bg-stone-800 hover:text-stone-300"
+                        : "border-g-border bg-g-raised text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
                     }`}
                   >
                     {tag}

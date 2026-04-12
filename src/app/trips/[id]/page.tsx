@@ -98,7 +98,7 @@ export default async function TripDetailPage({
   });
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-950 dark:bg-stone-950">
+    <div className="flex min-h-screen flex-col bg-g-page">
       <NavBar userEmail={user.email ?? ""} />
       <TripDetail
         trip={trip}

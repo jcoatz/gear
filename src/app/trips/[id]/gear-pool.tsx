@@ -34,8 +34,8 @@ function DraggableGearCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 rounded-lg border border-white/[0.06] bg-stone-800/40 px-3 py-2.5 transition-all ${
-        isDragging ? "opacity-30" : "hover:border-amber-500/20 hover:bg-stone-800/60"
+      className={`flex items-center gap-3 rounded-lg border border-g-border bg-g-raised px-3 py-2.5 transition-all ${
+        isDragging ? "opacity-30" : "hover:border-g-border-active hover:bg-g-raised"
       }`}
     >
       {/* Drag handle */}
@@ -43,20 +43,20 @@ function DraggableGearCard({
         type="button"
         {...listeners}
         {...attributes}
-        className="cursor-grab touch-none text-stone-600 hover:text-stone-400 active:cursor-grabbing"
+        className="cursor-grab touch-none text-g-text-4 hover:text-g-text-2 active:cursor-grabbing"
       >
         <GripVertical size={14} />
       </button>
 
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
         <Icon size={16} />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-stone-200">
+        <p className="truncate text-sm font-medium text-g-text">
           {item.name}
         </p>
-        <div className="flex gap-2 text-[11px] text-stone-500">
+        <div className="flex gap-2 text-[11px] text-g-text-3">
           {item.brand ? <span>{item.brand}</span> : null}
           {item.weight != null ? <span>{item.weight} kg</span> : null}
         </div>
@@ -67,7 +67,7 @@ function DraggableGearCard({
         type="button"
         onClick={() => onAdd(item.id)}
         disabled={adding === item.id}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-400 transition-colors hover:bg-amber-500/20 disabled:opacity-50"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-g-accent-surface text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
       >
         {adding === item.id ? (
           <Loader2 size={12} className="animate-spin" />
@@ -87,36 +87,36 @@ export function GearPool({
   onAdd,
 }: GearPoolProps) {
   return (
-    <div className="flex flex-col rounded-xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
-      <div className="border-b border-white/[0.06] px-4 py-3">
-        <h2 className="text-sm font-semibold text-stone-200">
+    <div className="flex flex-col rounded-xl border border-g-border bg-g-card backdrop-blur-md">
+      <div className="border-b border-g-border px-4 py-3">
+        <h2 className="text-sm font-semibold text-g-text">
           Your Gear
-          <span className="ml-2 text-stone-500">({gear.length})</span>
+          <span className="ml-2 text-g-text-3">({gear.length})</span>
         </h2>
-        <p className="mt-0.5 text-xs text-stone-500">
+        <p className="mt-0.5 text-xs text-g-text-3">
           Drag items into the trip bag, or click +
         </p>
       </div>
 
       {/* Search */}
-      <div className="border-b border-white/[0.06] px-4 py-2">
+      <div className="border-b border-g-border px-4 py-2">
         <div className="relative">
           <Search
             size={13}
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-500"
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-g-text-3"
           />
           <input
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search gear..."
-            className="h-8 w-full rounded-md border border-white/[0.06] bg-stone-800/40 pl-8 pr-7 text-xs text-stone-200 placeholder:text-stone-500 focus:border-amber-500/20 focus:outline-none"
+            className="h-8 w-full rounded-md border border-g-input-border bg-g-input pl-8 pr-7 text-xs text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none"
           />
           {search ? (
             <button
               type="button"
               onClick={() => onSearchChange("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-g-text-3 hover:text-g-text-2"
             >
               <X size={12} />
             </button>
@@ -127,7 +127,7 @@ export function GearPool({
       {/* Items */}
       <div className="flex flex-col gap-1.5 overflow-y-auto p-3" style={{ maxHeight: "28rem" }}>
         {gear.length === 0 ? (
-          <p className="py-8 text-center text-sm text-stone-500">
+          <p className="py-8 text-center text-sm text-g-text-3">
             {search ? "No matches" : "All gear is packed!"}
           </p>
         ) : (

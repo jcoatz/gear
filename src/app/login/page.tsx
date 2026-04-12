@@ -10,18 +10,18 @@ export default async function LoginPage({
   const nextPath = next?.startsWith("/") ? next : "/gear";
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-stone-950 p-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-g-page p-6">
       {/* Background decoration */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 bg-gradient-to-br from-amber-500/[0.04] via-transparent to-stone-950"
+        className="pointer-events-none fixed inset-0 bg-gradient-to-br from-[var(--g-glow)] via-transparent to-g-page"
       />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0"
         style={{
           backgroundImage:
-            "radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+            "radial-gradient(circle, var(--g-dot) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
         }}
       />

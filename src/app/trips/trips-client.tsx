@@ -93,24 +93,24 @@ export function TripsClient({ trips }: TripsClientProps) {
   }
 
   const inputClass =
-    "h-9 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20";
+    "h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface";
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent">
             <Map size={20} />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+          <h1 className="text-2xl font-bold tracking-tight text-g-text">
             Trips
           </h1>
         </div>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:bg-amber-500/30"
+          className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-4 py-2 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover"
         >
           <Plus size={16} />
           New trip
@@ -119,13 +119,13 @@ export function TripsClient({ trips }: TripsClientProps) {
 
       {/* Create form */}
       {showForm ? (
-        <div className="rounded-xl border border-white/[0.06] bg-stone-900/60 p-5 backdrop-blur-md">
-          <h2 className="mb-4 text-lg font-semibold text-stone-100">
+        <div className="rounded-xl border border-g-border bg-g-card p-5 backdrop-blur-md">
+          <h2 className="mb-4 text-lg font-semibold text-g-text">
             Plan a new trip
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-medium text-stone-400">
+              <label className="text-xs font-medium text-g-text-3">
                 Trip name
               </label>
               <input
@@ -136,7 +136,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               />
             </div>
             <div className="space-y-1 sm:col-span-2">
-              <label className="text-xs font-medium text-stone-400">
+              <label className="text-xs font-medium text-g-text-3">
                 Description
               </label>
               <input
@@ -147,7 +147,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-stone-400">
+              <label className="text-xs font-medium text-g-text-3">
                 Start date
               </label>
               <input
@@ -158,7 +158,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-stone-400">
+              <label className="text-xs font-medium text-g-text-3">
                 End date
               </label>
               <input
@@ -169,7 +169,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-stone-400">
+              <label className="text-xs font-medium text-g-text-3">
                 Target weight (kg)
               </label>
               <input
@@ -182,7 +182,7 @@ export function TripsClient({ trips }: TripsClientProps) {
             </div>
           </div>
           {error ? (
-            <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <p className="mt-3 rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
               {error}
             </p>
           ) : null}
@@ -190,7 +190,7 @@ export function TripsClient({ trips }: TripsClientProps) {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="rounded-lg border border-white/[0.08] bg-stone-800/60 px-4 py-2 text-sm text-stone-300 hover:bg-stone-800"
+              className="rounded-lg border border-g-input-border bg-g-input px-4 py-2 text-sm text-g-text-2 hover:bg-g-raised"
             >
               Cancel
             </button>
@@ -198,7 +198,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               type="button"
               onClick={handleCreate}
               disabled={creating || !name.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/30 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-4 py-2 text-sm font-medium text-g-accent hover:bg-g-accent-hover disabled:opacity-50"
             >
               {creating ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -211,13 +211,13 @@ export function TripsClient({ trips }: TripsClientProps) {
 
       {/* Trip list */}
       {trips.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/[0.1] bg-stone-900/40 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-stone-800/80">
-            <MapPin size={28} className="text-stone-500" />
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-g-border bg-g-card px-6 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-g-raised">
+            <MapPin size={28} className="text-g-text-3" />
           </div>
           <div>
-            <p className="font-medium text-stone-300">No trips yet</p>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="font-medium text-g-text-2">No trips yet</p>
+            <p className="mt-1 text-sm text-g-text-3">
               Create your first trip to start packing gear.
             </p>
           </div>
@@ -237,7 +237,7 @@ export function TripsClient({ trips }: TripsClientProps) {
               <Link
                 key={trip.id}
                 href={`/trips/${trip.id}`}
-                className="group relative flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-stone-900/60 p-5 backdrop-blur-md transition-all hover:border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/5"
+                className="group relative flex flex-col gap-3 rounded-xl border border-g-border bg-g-card p-5 backdrop-blur-md transition-all hover:border-g-border-active hover:shadow-lg hover:shadow-amber-500/5"
               >
                 {/* Delete button */}
                 <button
@@ -248,7 +248,7 @@ export function TripsClient({ trips }: TripsClientProps) {
                     handleDelete(trip.id);
                   }}
                   disabled={deletingId === trip.id}
-                  className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-lg text-stone-600 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
+                  className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-lg text-g-text-4 opacity-0 transition-all hover:bg-g-error-bg hover:text-g-error-text group-hover:opacity-100"
                 >
                   {deletingId === trip.id ? (
                     <Loader2 size={12} className="animate-spin" />
@@ -258,15 +258,15 @@ export function TripsClient({ trips }: TripsClientProps) {
                 </button>
 
                 <div>
-                  <h3 className="font-semibold text-stone-100">{trip.name}</h3>
+                  <h3 className="font-semibold text-g-text">{trip.name}</h3>
                   {trip.description ? (
-                    <p className="mt-0.5 text-sm text-stone-400 line-clamp-1">
+                    <p className="mt-0.5 text-sm text-g-text-2 line-clamp-1">
                       {trip.description}
                     </p>
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap gap-3 text-xs text-stone-500">
+                <div className="flex flex-wrap gap-3 text-xs text-g-text-3">
                   {trip.start_date ? (
                     <span className="flex items-center gap-1">
                       <Calendar size={11} />

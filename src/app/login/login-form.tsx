@@ -63,18 +63,18 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   }
 
   const inputClass =
-    "h-10 w-full rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 text-sm text-stone-200 placeholder:text-stone-500 focus:border-amber-500/30 focus:outline-none focus:ring-1 focus:ring-amber-500/20";
+    "h-10 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface";
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-white/[0.06] bg-stone-900/60 backdrop-blur-md">
+    <div className="w-full max-w-md rounded-2xl border border-g-border bg-g-card backdrop-blur-md">
       <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-2 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent">
           <Backpack size={24} strokeWidth={1.5} />
         </div>
-        <h1 className="text-xl font-bold text-stone-100">
+        <h1 className="text-xl font-bold text-g-text">
           {mode === "sign-in" ? "Welcome back" : "Create account"}
         </h1>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-g-text-3">
           {mode === "sign-in"
             ? "Sign in to access your gear inventory."
             : "Create an account to start tracking your gear."}
@@ -83,7 +83,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
       <form onSubmit={onSubmit} className="px-6 py-6 space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="auth-email" className="text-sm font-medium text-stone-300">
+          <label htmlFor="auth-email" className="text-sm font-medium text-g-text-2">
             Email
           </label>
           <input
@@ -97,7 +97,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="auth-password" className="text-sm font-medium text-stone-300">
+          <label htmlFor="auth-password" className="text-sm font-medium text-g-text-2">
             Password
           </label>
           <input
@@ -110,11 +110,11 @@ export function LoginForm({ nextPath }: LoginFormProps) {
             minLength={6}
             className={inputClass}
           />
-          <p className="text-xs text-stone-600">At least 6 characters.</p>
+          <p className="text-xs text-g-text-4">At least 6 characters.</p>
         </div>
 
         {error ? (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <p className="rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
             {error}
           </p>
         ) : null}
@@ -128,7 +128,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-amber-500/20 px-5 py-2.5 text-sm font-semibold text-amber-300 transition-colors hover:bg-amber-500/30 disabled:opacity-50"
+            className="rounded-lg bg-g-accent-hover px-5 py-2.5 text-sm font-semibold text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
           >
             {loading
               ? "Please wait..."
@@ -143,7 +143,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
               setError(null);
               setInfo(null);
             }}
-            className="text-sm text-stone-500 transition-colors hover:text-stone-300"
+            className="text-sm text-g-text-3 transition-colors hover:text-g-text-2"
           >
             {mode === "sign-in"
               ? "Need an account? Sign up"
@@ -152,8 +152,8 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         </div>
       </form>
 
-      <div className="border-t border-white/[0.06] px-6 py-4 text-center">
-        <Link href="/" className="text-sm text-stone-500 underline underline-offset-4 hover:text-stone-300">
+      <div className="border-t border-g-border px-6 py-4 text-center">
+        <Link href="/" className="text-sm text-g-text-3 underline underline-offset-4 hover:text-g-text-2">
           Back to home
         </Link>
       </div>

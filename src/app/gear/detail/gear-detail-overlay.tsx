@@ -74,14 +74,14 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
       {/* Detail card */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
         <div
-          className="pointer-events-auto relative w-full max-w-md rounded-2xl border border-white/10 bg-stone-900/95 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+          className="pointer-events-auto relative w-full max-w-md rounded-2xl border border-g-border bg-g-card shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
           >
             <X size={18} />
           </button>
@@ -117,7 +117,7 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                 className={`absolute top-4 right-14 z-10 flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
                   item.wishlist
                     ? "bg-red-500/20 text-red-400"
-                    : "text-stone-500 hover:bg-stone-800 hover:text-red-400"
+                    : "text-g-text-3 hover:bg-g-raised hover:text-red-400"
                 }`}
               >
                 <Heart size={16} fill={item.wishlist ? "currentColor" : "none"} />
@@ -125,19 +125,19 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
 
               {/* Icon + header */}
               <div className="mb-6 flex items-start gap-4 pr-16">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-g-accent-surface text-g-accent">
                   <ItemIcon size={28} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-stone-100">
+                  <h2 className="text-xl font-bold text-g-text">
                     {item.name}
                   </h2>
                   {(item.brand || item.model) ? (
-                    <p className="mt-0.5 text-sm text-stone-400">
+                    <p className="mt-0.5 text-sm text-g-text-2">
                       {[item.brand, item.model].filter(Boolean).join(" ")}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 text-xs text-stone-500">{categoryName}</p>
+                  <p className="mt-0.5 text-xs text-g-text-3">{categoryName}</p>
                 </div>
               </div>
 
@@ -153,7 +153,7 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                     </span>
                   ) : null}
                   {item.weight != null ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-stone-700 bg-stone-800/80 px-3 py-1 text-sm font-medium text-stone-200">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-g-border bg-g-raised px-3 py-1 text-sm font-medium text-g-text">
                       <Scale size={14} />
                       {item.weight} kg
                     </span>
@@ -187,8 +187,8 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                 {/* Notes */}
                 {item.notes ? (
                   <div>
-                    <p className="mb-1 text-xs text-stone-500">Notes</p>
-                    <p className="whitespace-pre-wrap rounded-lg bg-stone-800/50 p-3 text-sm text-stone-300">
+                    <p className="mb-1 text-xs text-g-text-3">Notes</p>
+                    <p className="whitespace-pre-wrap rounded-lg bg-g-raised p-3 text-sm text-g-text-2">
                       {item.notes}
                     </p>
                   </div>
@@ -196,11 +196,11 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
               </div>
 
               {/* Action buttons */}
-              <div className="mt-6 flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">
+              <div className="mt-6 flex flex-wrap gap-2 border-t border-g-border pt-4">
                 <button
                   type="button"
                   onClick={() => setView("edit")}
-                  className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-300 transition-colors hover:bg-amber-500/20"
+                  className="flex items-center gap-1.5 rounded-lg border border-g-border-active bg-g-accent-surface px-3 py-2 text-sm text-g-accent transition-colors hover:bg-g-accent-hover"
                 >
                   <Settings size={14} />
                   Edit item
@@ -208,7 +208,7 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                 <button
                   type="button"
                   onClick={() => setView("tags")}
-                  className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-stone-800/60 px-3 py-2 text-sm text-stone-300 transition-colors hover:bg-stone-800 hover:text-stone-100"
+                  className="flex items-center gap-1.5 rounded-lg border border-g-border bg-g-raised px-3 py-2 text-sm text-g-text-2 transition-colors hover:bg-g-raised hover:text-g-text"
                 >
                   <Pencil size={14} />
                   Edit tags
@@ -216,7 +216,7 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                 <button
                   type="button"
                   onClick={() => setView("delete")}
-                  className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/20 ml-auto"
+                  className="flex items-center gap-1.5 rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text transition-colors hover:bg-red-500/20 ml-auto"
                 >
                   <Trash2 size={14} />
                   Delete

@@ -188,21 +188,21 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
           <div className="flex items-center gap-3">
             <Link
               href="/trips"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-stone-800/60 text-stone-400 transition-colors hover:bg-stone-800 hover:text-stone-200"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-g-input-border bg-g-input text-g-text-2 transition-colors hover:bg-g-raised hover:text-g-text"
             >
               <ArrowLeft size={16} />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+              <h1 className="text-2xl font-bold tracking-tight text-g-text">
                 {trip.name}
               </h1>
               {trip.description ? (
-                <p className="text-sm text-stone-500">{trip.description}</p>
+                <p className="text-sm text-g-text-3">{trip.description}</p>
               ) : null}
             </div>
           </div>
           {trip.start_date ? (
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-g-text-3">
               {trip.start_date}
               {trip.end_date ? ` → ${trip.end_date}` : ""}
             </p>
@@ -211,52 +211,52 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3">
-            <Package size={18} className="text-amber-400" />
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3">
+            <Package size={18} className="text-g-accent" />
             <div>
-              <p className="text-xl font-semibold text-stone-100">
+              <p className="text-xl font-semibold text-g-text">
                 {items.length}
               </p>
-              <p className="text-xs text-stone-500">Items</p>
+              <p className="text-xs text-g-text-3">Items</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3">
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3">
             <CheckCircle2 size={18} className="text-emerald-400" />
             <div>
-              <p className="text-xl font-semibold text-stone-100">
+              <p className="text-xl font-semibold text-g-text">
                 {packedCount}/{items.length}
               </p>
-              <p className="text-xs text-stone-500">Packed</p>
+              <p className="text-xs text-g-text-3">Packed</p>
             </div>
           </div>
           <div
             className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
               overWeight
                 ? "border-red-500/20 bg-red-500/[0.07]"
-                : "border-white/[0.06] bg-stone-900/60"
+                : "border-g-border bg-g-card"
             }`}
           >
             <Scale
               size={18}
-              className={overWeight ? "text-red-400" : "text-amber-400"}
+              className={overWeight ? "text-red-400" : "text-g-accent"}
             />
             <div>
               <p
-                className={`text-xl font-semibold ${overWeight ? "text-red-400" : "text-stone-100"}`}
+                className={`text-xl font-semibold ${overWeight ? "text-red-400" : "text-g-text"}`}
               >
                 {totalWeight.toFixed(1)} kg
               </p>
-              <p className="text-xs text-stone-500">Total weight</p>
+              <p className="text-xs text-g-text-3">Total weight</p>
             </div>
           </div>
           {trip.target_weight_kg != null ? (
-            <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-stone-900/60 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3">
               <Target size={18} className="text-sky-400" />
               <div>
-                <p className="text-xl font-semibold text-stone-100">
+                <p className="text-xl font-semibold text-g-text">
                   {trip.target_weight_kg} kg
                 </p>
-                <p className="text-xs text-stone-500">Target</p>
+                <p className="text-xs text-g-text-3">Target</p>
               </div>
             </div>
           ) : null}
@@ -288,19 +288,19 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
       {/* Drag overlay */}
       <DragOverlay>
         {draggingItem ? (
-          <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-stone-900/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
+          <div className="flex items-center gap-3 rounded-xl border border-g-border-active bg-g-card px-4 py-3 shadow-2xl backdrop-blur-xl">
             {(() => {
               const Icon = getGearIcon(
                 draggingItem.name,
                 draggingItem.brand,
                 draggingItem.categoryName,
               );
-              return <Icon size={18} className="text-amber-400" />;
+              return <Icon size={18} className="text-g-accent" />;
             })()}
             <div>
-              <p className="font-medium text-stone-100">{draggingItem.name}</p>
+              <p className="font-medium text-g-text">{draggingItem.name}</p>
               {draggingItem.weight != null ? (
-                <p className="text-xs text-stone-400">
+                <p className="text-xs text-g-text-2">
                   {draggingItem.weight} kg
                 </p>
               ) : null}
