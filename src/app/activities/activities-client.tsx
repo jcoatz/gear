@@ -11,8 +11,11 @@ import {
   Loader2,
   Minus,
   Plus,
+  Scale,
   Shield,
   Sparkles,
+  Tag,
+  X,
   Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -46,6 +49,8 @@ export function ActivitiesClient({ userActivities, userGear, categories }: Activ
   const [saving, setSaving] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [addingKeyword, setAddingKeyword] = useState<string | null>(null);
+  const [quickAddForm, setQuickAddForm] = useState<string | null>(null); // keyword being edited
+  const [qaFields, setQaFields] = useState({ brand: "", weight: "", price: "", category_id: "" });
   const [selectedGearItem, setSelectedGearItem] = useState<GearItemRow | null>(null);
 
   // Simplified gear for badge computation (needs id + name + categoryName)
@@ -89,32 +94,52 @@ export function ActivitiesClient({ userActivities, userGear, categories }: Activ
     router.refresh();
   }
 
+  function openQuickAddForm(keyword: string) {
+    const name = keyword
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    setQuickAddForm(keyword);
+    setQaFields({ brand: "", weight: "", price: "", category_id: "" });
+  }
+
   async function handleQuickAdd(keyword: string) {
     setAddingKeyword(keyword);
     const name = keyword
       .split(" ")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
-    const result = await quickAddGearItem(name);
+
+    const extras: { brand?: string; weight?: number; price?: number; category_id?: string } = {};
+    if (qaFields.brand.trim()) extras.brand = qaFields.brand.trim();
+    if (qaFields.weight && Number(qaFields.weight) > 0) extras.weight = Number(qaFields.weight);
+    if (qaFields.price && Number(qaFields.price) > 0) extras.price = Number(qaFields.price);
+    if (qaFields.category_id) extras.category_id = qaFields.category_id;
+
+    const matchedCat = extras.category_id
+      ? categories.find((c) => c.id === extras.category_id) ?? null
+      : null;
+
+    const result = await quickAddGearItem(name, extras);
     if (result.ok) {
-      // Optimistic: add to local gear so badge updates immediately
       const tempItem: GearItemRow = {
         id: `temp-${Date.now()}`,
         name,
-        brand: null,
+        brand: extras.brand ?? null,
         model: null,
         condition: "good",
-        weight: null,
-        price: null,
+        weight: extras.weight ?? null,
+        price: extras.price ?? null,
         notes: null,
         tags: [],
         wishlist: false,
-        category_id: null,
-        categories: null,
+        category_id: extras.category_id ?? null,
+        categories: matchedCat ? { name: matchedCat.name } : null,
       };
       setGear((prev) => [...prev, tempItem]);
     }
     setAddingKeyword(null);
+    setQuickAddForm(null);
     router.refresh();
   }
 
@@ -337,56 +362,156 @@ export function ActivitiesClient({ userActivities, userGear, categories }: Activ
                               </div>
                               {/* Item-by-item checklist */}
                               {badge.details.length > 0 ? (
-                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                <div className="space-y-1.5 max-h-64 overflow-y-auto">
                                   {badge.details.map((detail) => (
-                                    <div
-                                      key={detail.keyword}
-                                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                                        detail.matched
-                                          ? "bg-emerald-500/8 dark:bg-emerald-500/8"
-                                          : "bg-g-raised/50"
-                                      }`}
-                                    >
-                                      {detail.matched ? (
-                                        <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
-                                      ) : (
-                                        <Circle size={13} className="shrink-0 text-g-text-4" />
-                                      )}
-                                      <span className={`capitalize flex-1 ${
-                                        detail.matched ? "text-g-text-2" : "text-g-text-3"
-                                      }`}>
-                                        {detail.keyword}
-                                      </span>
-                                      {detail.matched && detail.matchedItemId ? (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleGearClick(detail.matchedItemId!);
-                                          }}
-                                          className="flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors shrink-0 max-w-[140px]"
+                                    <div key={detail.keyword}>
+                                      <div
+                                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                                          detail.matched
+                                            ? "bg-emerald-500/8 dark:bg-emerald-500/8"
+                                            : "bg-g-raised/50"
+                                        }`}
+                                      >
+                                        {detail.matched ? (
+                                          <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                                        ) : (
+                                          <Circle size={13} className="shrink-0 text-g-text-4" />
+                                        )}
+                                        <span className={`capitalize flex-1 ${
+                                          detail.matched ? "text-g-text-2" : "text-g-text-3"
+                                        }`}>
+                                          {detail.keyword}
+                                        </span>
+                                        {detail.matched && detail.matchedItemId ? (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleGearClick(detail.matchedItemId!);
+                                            }}
+                                            className="flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/8 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors shrink-0 max-w-[140px]"
+                                          >
+                                            <ExternalLink size={8} className="shrink-0" />
+                                            <span className="truncate">{detail.matchedItem}</span>
+                                          </button>
+                                        ) : quickAddForm === detail.keyword ? (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setQuickAddForm(null);
+                                            }}
+                                            className="flex items-center gap-0.5 rounded-md border border-g-border bg-g-raised px-1.5 py-0.5 text-[10px] font-medium text-g-text-3 hover:text-g-text-2 transition-colors shrink-0"
+                                          >
+                                            <X size={9} />
+                                            Cancel
+                                          </button>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openQuickAddForm(detail.keyword);
+                                            }}
+                                            disabled={addingKeyword === detail.keyword}
+                                            className="flex items-center gap-0.5 rounded-md border border-g-border-active bg-g-accent-surface px-1.5 py-0.5 text-[10px] font-medium text-g-accent hover:bg-g-accent-hover transition-colors shrink-0 disabled:opacity-50"
+                                          >
+                                            {addingKeyword === detail.keyword ? (
+                                              <Loader2 size={9} className="animate-spin" />
+                                            ) : (
+                                              <Plus size={9} />
+                                            )}
+                                            Add to gear
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Inline mini-form */}
+                                      {quickAddForm === detail.keyword ? (
+                                        <div
+                                          className="mt-1 rounded-lg border border-g-accent/20 bg-g-card px-3 py-2.5 space-y-2"
+                                          onClick={(e) => e.stopPropagation()}
                                         >
-                                          <ExternalLink size={8} className="shrink-0" />
-                                          <span className="truncate">{detail.matchedItem}</span>
-                                        </button>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleQuickAdd(detail.keyword);
-                                          }}
-                                          disabled={addingKeyword === detail.keyword}
-                                          className="flex items-center gap-0.5 rounded-md border border-g-border-active bg-g-accent-surface px-1.5 py-0.5 text-[10px] font-medium text-g-accent hover:bg-g-accent-hover transition-colors shrink-0 disabled:opacity-50"
-                                        >
-                                          {addingKeyword === detail.keyword ? (
-                                            <Loader2 size={9} className="animate-spin" />
-                                          ) : (
-                                            <Plus size={9} />
-                                          )}
-                                          Add to gear
-                                        </button>
-                                      )}
+                                          <p className="text-[11px] font-semibold text-g-text-2 flex items-center gap-1.5">
+                                            <Plus size={10} className="text-g-accent" />
+                                            Add &ldquo;{detail.keyword.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}&rdquo; to your gear
+                                          </p>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                              <label className="text-[10px] text-g-text-3 mb-0.5 block">Brand</label>
+                                              <input
+                                                value={qaFields.brand}
+                                                onChange={(e) => setQaFields((f) => ({ ...f, brand: e.target.value }))}
+                                                placeholder="e.g. Osprey"
+                                                className="h-7 w-full rounded-md border border-g-input-border bg-g-input px-2 text-xs text-g-text placeholder:text-g-text-4 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-[10px] text-g-text-3 mb-0.5 block">Category</label>
+                                              <select
+                                                value={qaFields.category_id}
+                                                onChange={(e) => setQaFields((f) => ({ ...f, category_id: e.target.value }))}
+                                                className="h-7 w-full rounded-md border border-g-input-border bg-g-input px-2 text-xs text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                                              >
+                                                <option value="">None</option>
+                                                {categories.map((c) => (
+                                                  <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label className="text-[10px] text-g-text-3 mb-0.5 flex items-center gap-0.5">
+                                                <Scale size={8} /> Weight (kg)
+                                              </label>
+                                              <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={qaFields.weight}
+                                                onChange={(e) => setQaFields((f) => ({ ...f, weight: e.target.value }))}
+                                                placeholder="0.00"
+                                                className="h-7 w-full rounded-md border border-g-input-border bg-g-input px-2 text-xs text-g-text placeholder:text-g-text-4 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-[10px] text-g-text-3 mb-0.5 flex items-center gap-0.5">
+                                                <Tag size={8} /> Price
+                                              </label>
+                                              <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={qaFields.price}
+                                                onChange={(e) => setQaFields((f) => ({ ...f, price: e.target.value }))}
+                                                placeholder="0.00"
+                                                className="h-7 w-full rounded-md border border-g-input-border bg-g-input px-2 text-xs text-g-text placeholder:text-g-text-4 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2 pt-0.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleQuickAdd(detail.keyword)}
+                                              disabled={addingKeyword === detail.keyword}
+                                              className="flex items-center gap-1 rounded-lg bg-g-accent-hover px-3 py-1.5 text-[11px] font-medium text-g-accent hover:bg-g-accent-hover disabled:opacity-50 transition-colors"
+                                            >
+                                              {addingKeyword === detail.keyword ? (
+                                                <Loader2 size={10} className="animate-spin" />
+                                              ) : (
+                                                <Plus size={10} />
+                                              )}
+                                              Add to gear
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setQuickAddForm(null)}
+                                              className="text-[11px] text-g-text-4 hover:text-g-text-2 transition-colors"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : null}
                                     </div>
                                   ))}
                                 </div>

@@ -31,30 +31,42 @@ export default async function TripDetailPage({
 
   if (!trip) notFound();
 
-  // Fetch trip items with gear details
-  const { data: tripItems } = await supabase
-    .from("trip_items")
-    .select(`
-      id,
-      gear_item_id,
-      packed,
-      sort_order,
-      gear_items:gear_item_id (
-        id, name, brand, model, condition, weight, category_id,
+  // Fetch trip items, all gear, user activities, and past trip frequency in parallel
+  const [
+    { data: tripItems },
+    { data: allGear },
+    { data: userActivities },
+    { data: otherTripItems },
+  ] = await Promise.all([
+    supabase
+      .from("trip_items")
+      .select(`
+        id,
+        gear_item_id,
+        packed,
+        sort_order,
+        gear_items:gear_item_id (
+          id, name, brand, model, condition, weight, category_id,
+          categories ( name )
+        )
+      `)
+      .eq("trip_id", id)
+      .order("sort_order"),
+    supabase
+      .from("gear_items")
+      .select(`
+        id, name, brand, model, condition, weight, tags, category_id, wishlist,
         categories ( name )
-      )
-    `)
-    .eq("trip_id", id)
-    .order("sort_order");
-
-  // Fetch all user gear (for the pool)
-  const { data: allGear } = await supabase
-    .from("gear_items")
-    .select(`
-      id, name, brand, model, condition, weight, tags, category_id, wishlist,
-      categories ( name )
-    `)
-    .order("created_at", { ascending: false });
+      `)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("user_activities")
+      .select("activity_slug, skill_level"),
+    supabase
+      .from("trip_items")
+      .select("gear_item_id")
+      .neq("trip_id", id),
+  ]);
 
   // Normalize
   const normalizedTripItems = (tripItems ?? []).map((ti) => {
@@ -97,6 +109,18 @@ export default async function TripDetailPage({
     };
   });
 
+  // Build activity map
+  const activityMap: Record<string, string> = {};
+  for (const ua of userActivities ?? []) {
+    activityMap[ua.activity_slug] = ua.skill_level;
+  }
+
+  // Build past trip frequency map (gear_item_id → count of other trips it appeared in)
+  const pastFrequency: Record<string, number> = {};
+  for (const ti of otherTripItems ?? []) {
+    pastFrequency[ti.gear_item_id] = (pastFrequency[ti.gear_item_id] ?? 0) + 1;
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-g-page">
       <NavBar userEmail={user.email ?? ""} />
@@ -104,6 +128,8 @@ export default async function TripDetailPage({
         trip={trip}
         tripItems={normalizedTripItems}
         allGear={normalizedGear}
+        userActivities={activityMap}
+        pastFrequency={pastFrequency}
       />
     </div>
   );

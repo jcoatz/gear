@@ -35,6 +35,7 @@ import {
 } from "../actions";
 import { saveAsTemplate } from "../template-actions";
 import { GearPool } from "./gear-pool";
+import { PackSuggestions } from "./pack-suggestions";
 import { TripBag } from "./trip-bag";
 
 export type TripItemData = {
@@ -73,9 +74,11 @@ type TripDetailProps = {
   };
   tripItems: TripItemData[];
   allGear: GearPoolItem[];
+  userActivities: Record<string, string>;
+  pastFrequency: Record<string, number>;
 };
 
-export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
+export function TripDetail({ trip, tripItems, allGear, userActivities, pastFrequency }: TripDetailProps) {
   const router = useRouter();
   const [items, setItems] = useState(tripItems);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -323,6 +326,15 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
             </div>
           ) : null}
         </div>
+
+        {/* Smart suggestions */}
+        <PackSuggestions
+          availableGear={availableGear}
+          userActivities={userActivities}
+          pastFrequency={pastFrequency}
+          adding={adding}
+          onAdd={handleAddItem}
+        />
 
         {/* Two-column layout */}
         <div className="grid gap-6 lg:grid-cols-2">

@@ -12,6 +12,7 @@ import {
   Scale,
   Tag,
   Warehouse,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -220,6 +221,7 @@ export function GearClient({
   const [submitting, setSubmitting] = useState(false);
   const [selectedItem, setSelectedItem] = useState<GearItemRow | null>(null);
   const [showWishlistOnly, setShowWishlistOnly] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const filters = useGearFilters(
     showWishlistOnly ? items.filter((i) => i.wishlist) : items,
@@ -438,205 +440,266 @@ export function GearClient({
 
         {/* ── Quick add ── */}
         <QuickAdd categories={categories} />
+      </div>
 
-        {/* ── Add gear form ── */}
-        <div className="rounded-xl border border-g-border bg-g-card backdrop-blur-md">
-          <div className="border-b border-g-border px-5 py-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-g-text">
-              <Plus size={18} className="text-g-accent" />
-              Add gear
-            </h2>
-            <p className="mt-1 text-sm text-g-text-3">
-              {categories.length === 0
-                ? "Add rows to the categories table in Supabase to enable the category dropdown."
-                : "Save a new item to your inventory."}
-            </p>
-          </div>
-          <form
-            onSubmit={form.handleSubmit(async (values) => {
-              setFormError(null);
-              setSubmitting(true);
-              try {
-                const result = await addGearItem(values);
-                if (!result.ok) {
-                  setFormError(result.message);
-                  return;
-                }
-                form.reset({
-                  ...defaultValues,
-                  category_id: values.category_id,
-                  condition: values.condition,
-                });
-                router.refresh();
-              } finally {
-                setSubmitting(false);
-              }
-            })}
+      {/* ── Floating add button ── */}
+      <AnimatePresence>
+        {!showAddForm ? (
+          <motion.button
+            key="fab"
+            type="button"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            onClick={() => setShowAddForm(true)}
+            className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-g-accent text-white shadow-lg shadow-g-accent/30 transition-transform hover:scale-110 active:scale-95"
           >
-            <div className="space-y-4 px-5 py-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {/* Name */}
-                <div className="space-y-1.5">
-                  <label htmlFor="gear-name" className="text-sm font-medium text-g-text-2">
-                    Name
-                  </label>
-                  <input
-                    id="gear-name"
-                    autoComplete="off"
-                    {...form.register("name")}
-                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                  />
-                  {form.formState.errors.name ? (
-                    <p className="text-xs text-g-error-text">{form.formState.errors.name.message}</p>
+            <Plus size={24} />
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      {/* ── Slide-up add-gear modal ── */}
+      <AnimatePresence>
+        {showAddForm ? (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowAddForm(false)}
+            />
+
+            {/* Modal panel */}
+            <motion.div
+              key="add-modal"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-g-border bg-g-page shadow-2xl sm:inset-x-auto sm:left-1/2 sm:right-auto sm:bottom-0 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:rounded-t-2xl"
+            >
+              {/* Handle bar */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="h-1 w-10 rounded-full bg-g-text-4/30" />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-3">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-g-text">
+                  <Plus size={18} className="text-g-accent" />
+                  Add gear
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form
+                onSubmit={form.handleSubmit(async (values) => {
+                  setFormError(null);
+                  setSubmitting(true);
+                  try {
+                    const result = await addGearItem(values);
+                    if (!result.ok) {
+                      setFormError(result.message);
+                      return;
+                    }
+                    form.reset({
+                      ...defaultValues,
+                      category_id: values.category_id,
+                      condition: values.condition,
+                    });
+                    setShowAddForm(false);
+                    router.refresh();
+                  } finally {
+                    setSubmitting(false);
+                  }
+                })}
+              >
+                <div className="space-y-4 px-5 py-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Name */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="gear-name" className="text-sm font-medium text-g-text-2">
+                        Name
+                      </label>
+                      <input
+                        id="gear-name"
+                        autoFocus
+                        autoComplete="off"
+                        {...form.register("name")}
+                        className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                      />
+                      {form.formState.errors.name ? (
+                        <p className="text-xs text-g-error-text">{form.formState.errors.name.message}</p>
+                      ) : null}
+                    </div>
+
+                    {/* Brand */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="gear-brand" className="text-sm font-medium text-g-text-2">
+                        Brand
+                      </label>
+                      <input
+                        id="gear-brand"
+                        autoComplete="off"
+                        {...form.register("brand")}
+                        className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                      />
+                      <div className="flex flex-wrap gap-1">
+                        {POPULAR_BRANDS.slice(0, 8).map((brand) => (
+                          <button
+                            key={brand}
+                            type="button"
+                            onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
+                            className="rounded-full border border-g-border bg-g-raised px-2 py-0.5 text-[11px] text-g-text-3 transition-colors hover:border-g-border-active hover:bg-g-accent-surface hover:text-g-accent"
+                          >
+                            {brand}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Model */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="gear-model" className="text-sm font-medium text-g-text-2">
+                        Model
+                      </label>
+                      <input
+                        id="gear-model"
+                        autoComplete="off"
+                        {...form.register("model")}
+                        className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-g-text-2">Category</label>
+                      <Controller
+                        control={form.control}
+                        name="category_id"
+                        render={({ field }) => (
+                          <select
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                          >
+                            <option value="" disabled>
+                              Select category
+                            </option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      />
+                    </div>
+
+                    {/* Condition */}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-g-text-2">Condition</label>
+                      <Controller
+                        control={form.control}
+                        name="condition"
+                        render={({ field }) => (
+                          <select
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                          >
+                            {GEAR_CONDITIONS.map((c) => (
+                              <option key={c} value={c}>
+                                {CONDITION_LABELS[c]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      />
+                    </div>
+
+                    {/* Weight */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="gear-weight" className="text-sm font-medium text-g-text-2">
+                        Weight (kg)
+                      </label>
+                      <input
+                        id="gear-weight"
+                        inputMode="decimal"
+                        placeholder="e.g. 2.5"
+                        {...form.register("weight")}
+                        className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                      />
+                    </div>
+
+                    {/* Price */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="gear-price" className="text-sm font-medium text-g-text-2">
+                        Price ($)
+                      </label>
+                      <input
+                        id="gear-price"
+                        inputMode="decimal"
+                        placeholder="e.g. 299"
+                        {...form.register("price")}
+                        className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="gear-notes" className="text-sm font-medium text-g-text-2">
+                      Notes
+                    </label>
+                    <textarea
+                      id="gear-notes"
+                      rows={2}
+                      {...form.register("notes")}
+                      className="w-full rounded-lg border border-g-input-border bg-g-input px-3 py-2 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                    />
+                  </div>
+
+                  {formError ? (
+                    <p className="rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
+                      {formError}
+                    </p>
                   ) : null}
                 </div>
 
-                {/* Brand */}
-                <div className="space-y-1.5">
-                  <label htmlFor="gear-brand" className="text-sm font-medium text-g-text-2">
-                    Brand
-                  </label>
-                  <input
-                    id="gear-brand"
-                    autoComplete="off"
-                    {...form.register("brand")}
-                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                  />
-                  <div className="flex flex-wrap gap-1">
-                    {POPULAR_BRANDS.slice(0, 8).map((brand) => (
-                      <button
-                        key={brand}
-                        type="button"
-                        onClick={() => form.setValue("brand", brand, { shouldDirty: true })}
-                        className="rounded-full border border-g-border bg-g-raised px-2 py-0.5 text-[11px] text-g-text-3 transition-colors hover:border-g-border-active hover:bg-g-accent-surface hover:text-g-accent"
-                      >
-                        {brand}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex items-center justify-between border-t border-g-border px-5 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="rounded-lg border border-g-border px-4 py-2 text-sm font-medium text-g-text-3 transition-colors hover:bg-g-raised hover:text-g-text"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || categories.length === 0}
+                    className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-5 py-2 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
+                  >
+                    {submitting ? "Saving..." : "Add item"}
+                  </button>
                 </div>
-
-                {/* Model */}
-                <div className="space-y-1.5">
-                  <label htmlFor="gear-model" className="text-sm font-medium text-g-text-2">
-                    Model
-                  </label>
-                  <input
-                    id="gear-model"
-                    autoComplete="off"
-                    {...form.register("model")}
-                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                  />
-                </div>
-
-                {/* Category */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-g-text-2">Category</label>
-                  <Controller
-                    control={form.control}
-                    name="category_id"
-                    render={({ field }) => (
-                      <select
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                      >
-                        <option value="" disabled>
-                          Select category
-                        </option>
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  />
-                </div>
-
-                {/* Condition */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-g-text-2">Condition</label>
-                  <Controller
-                    control={form.control}
-                    name="condition"
-                    render={({ field }) => (
-                      <select
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className="h-9 w-full appearance-none rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                      >
-                        {GEAR_CONDITIONS.map((c) => (
-                          <option key={c} value={c}>
-                            {CONDITION_LABELS[c]}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  />
-                </div>
-
-                {/* Weight */}
-                <div className="space-y-1.5">
-                  <label htmlFor="gear-weight" className="text-sm font-medium text-g-text-2">
-                    Weight
-                  </label>
-                  <input
-                    id="gear-weight"
-                    inputMode="decimal"
-                    placeholder="e.g. 2.5 (kg)"
-                    {...form.register("weight")}
-                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                  />
-                </div>
-
-                {/* Price */}
-                <div className="space-y-1.5">
-                  <label htmlFor="gear-price" className="text-sm font-medium text-g-text-2">
-                    Price ($)
-                  </label>
-                  <input
-                    id="gear-price"
-                    inputMode="decimal"
-                    placeholder="e.g. 299"
-                    {...form.register("price")}
-                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1.5">
-                <label htmlFor="gear-notes" className="text-sm font-medium text-g-text-2">
-                  Notes
-                </label>
-                <textarea
-                  id="gear-notes"
-                  rows={3}
-                  {...form.register("notes")}
-                  className="w-full rounded-lg border border-g-input-border bg-g-input px-3 py-2 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
-                />
-              </div>
-
-              {formError ? (
-                <p className="rounded-lg border border-g-error-border bg-g-error-bg px-3 py-2 text-sm text-g-error-text">
-                  {formError}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex justify-end border-t border-g-border px-5 py-3">
-              <button
-                type="submit"
-                disabled={submitting || categories.length === 0}
-                className="flex items-center gap-1.5 rounded-lg bg-g-accent-hover px-5 py-2 text-sm font-medium text-g-accent transition-colors hover:bg-g-accent-hover disabled:opacity-50"
-              >
-                {submitting ? "Saving..." : "Add item"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+              </form>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
 
       {/* ── Detail overlay ── */}
       <GearDetailOverlay

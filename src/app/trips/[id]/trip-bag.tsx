@@ -3,12 +3,14 @@
 import { useDroppable } from "@dnd-kit/core";
 import {
   Backpack,
-  Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Circle,
   Scale,
   Trash2,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { getGearIcon } from "@/app/gear/gear-icons";
 import type { TripItemData } from "./trip-detail";
 
@@ -21,6 +23,29 @@ type TripBagProps = {
   onRemove: (gearItemId: string) => void;
 };
 
+type CategoryGroup = {
+  name: string;
+  items: TripItemData[];
+  totalWeight: number;
+  packedWeight: number;
+  packedCount: number;
+};
+
+const CATEGORY_ORDER = [
+  "Tents & Shelters",
+  "Sleep Systems",
+  "Clothing",
+  "Cooking",
+  "Navigation",
+  "Safety",
+  "Other",
+];
+
+function getCategorySort(name: string): number {
+  const idx = CATEGORY_ORDER.indexOf(name);
+  return idx >= 0 ? idx : CATEGORY_ORDER.length;
+}
+
 export function TripBag({
   items,
   packedWeight,
@@ -30,10 +55,47 @@ export function TripBag({
   onRemove,
 }: TripBagProps) {
   const { setNodeRef, isOver } = useDroppable({ id: "trip-bag" });
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const progress = targetWeight
     ? Math.min((totalWeight / targetWeight) * 100, 100)
     : null;
+
+  // Group items by category
+  const groups = useMemo(() => {
+    const map = new Map<string, TripItemData[]>();
+    for (const item of items) {
+      const cat = item.categoryName ?? "Uncategorised";
+      const arr = map.get(cat) ?? [];
+      arr.push(item);
+      map.set(cat, arr);
+    }
+
+    const result: CategoryGroup[] = [];
+    for (const [name, groupItems] of map) {
+      result.push({
+        name,
+        items: groupItems,
+        totalWeight: groupItems.reduce((s, i) => s + (i.weight ?? 0), 0),
+        packedWeight: groupItems.filter((i) => i.packed).reduce((s, i) => s + (i.weight ?? 0), 0),
+        packedCount: groupItems.filter((i) => i.packed).length,
+      });
+    }
+
+    result.sort((a, b) => getCategorySort(a.name) - getCategorySort(b.name));
+    return result;
+  }, [items]);
+
+  const totalPacked = items.filter((i) => i.packed).length;
+
+  function toggleCollapsed(cat: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
 
   return (
     <div
@@ -54,10 +116,22 @@ export function TripBag({
           </h2>
           {items.length > 0 ? (
             <span className="text-xs text-g-text-3">
-              {items.filter((i) => i.packed).length}/{items.length} packed
+              {totalPacked}/{items.length} packed
             </span>
           ) : null}
         </div>
+
+        {/* Overall packed progress */}
+        {items.length > 0 ? (
+          <div className="mt-2">
+            <div className="h-1.5 overflow-hidden rounded-full bg-g-raised">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                style={{ width: `${items.length > 0 ? (totalPacked / items.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
 
         {/* Weight progress bar */}
         {progress != null ? (
@@ -69,7 +143,7 @@ export function TripBag({
             <div className="h-1.5 overflow-hidden rounded-full bg-g-raised">
               <div
                 className={`h-full rounded-full transition-all ${
-                  progress >= 100 ? "bg-red-500" : progress >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                  progress >= 100 ? "bg-red-500" : progress >= 80 ? "bg-amber-500" : "bg-sky-500"
                 }`}
                 style={{ width: `${progress}%` }}
               />
@@ -78,98 +152,170 @@ export function TripBag({
         ) : null}
       </div>
 
-      {/* Items */}
-      <div className="flex flex-col gap-1 overflow-y-auto p-3" style={{ maxHeight: "28rem" }}>
+      {/* Items grouped by category */}
+      <div className="overflow-y-auto" style={{ maxHeight: "32rem" }}>
         {items.length === 0 ? (
-          <div
-            className={`flex flex-col items-center gap-2 rounded-lg border-2 border-dashed py-12 text-center transition-colors ${
-              isOver
-                ? "border-amber-500/30 text-amber-300"
-                : "border-g-border text-g-text-3"
-            }`}
-          >
-            <Backpack size={28} />
-            <p className="text-sm">
-              {isOver ? "Drop to add!" : "Drag gear here to pack"}
-            </p>
+          <div className="p-3">
+            <div
+              className={`flex flex-col items-center gap-2 rounded-lg border-2 border-dashed py-12 text-center transition-colors ${
+                isOver
+                  ? "border-amber-500/30 text-amber-300"
+                  : "border-g-border text-g-text-3"
+              }`}
+            >
+              <Backpack size={28} />
+              <p className="text-sm">
+                {isOver ? "Drop to add!" : "Drag gear here to pack"}
+              </p>
+            </div>
           </div>
         ) : (
-          items.map((item) => {
-            const Icon = getGearIcon(item.name, item.brand, item.categoryName);
+          groups.map((group) => {
+            const isCollapsed = collapsed.has(group.name);
+            const groupProgress = group.items.length > 0
+              ? (group.packedCount / group.items.length) * 100
+              : 0;
+            const allPacked = group.packedCount === group.items.length;
+
             return (
-              <div
-                key={item.tripItemId}
-                className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all ${
-                  item.packed
-                    ? "border-emerald-500/20 bg-emerald-500/[0.05]"
-                    : "border-g-border bg-g-raised"
-                }`}
-              >
-                {/* Pack toggle */}
+              <div key={group.name} className="border-b border-g-border/50 last:border-b-0">
+                {/* Category header */}
                 <button
                   type="button"
-                  onClick={() =>
-                    onTogglePacked(item.tripItemId, !item.packed)
-                  }
-                  className={`shrink-0 transition-colors ${
-                    item.packed
-                      ? "text-emerald-400"
-                      : "text-g-text-4 hover:text-g-text-2"
-                  }`}
+                  onClick={() => toggleCollapsed(group.name)}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-g-raised/50"
                 >
-                  {item.packed ? (
-                    <CheckCircle2 size={18} />
+                  {isCollapsed ? (
+                    <ChevronRight size={14} className="shrink-0 text-g-text-4" />
                   ) : (
-                    <Circle size={18} />
+                    <ChevronDown size={14} className="shrink-0 text-g-text-4" />
                   )}
-                </button>
 
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
-                  <Icon size={16} />
-                </div>
+                  <span className="flex-1 text-xs font-bold uppercase tracking-wider text-g-text-3">
+                    {group.name}
+                  </span>
 
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate text-sm font-medium ${
-                      item.packed
-                        ? "text-g-text-2 line-through"
-                        : "text-g-text"
-                    }`}
-                  >
-                    {item.name}
-                  </p>
-                  <div className="flex gap-2 text-[11px] text-g-text-3">
-                    {item.brand ? <span>{item.brand}</span> : null}
-                    {item.weight != null ? (
+                  {/* Per-category stats */}
+                  <span className="flex items-center gap-2 text-[11px] text-g-text-4">
+                    <span className={allPacked ? "text-emerald-400" : ""}>
+                      {group.packedCount}/{group.items.length}
+                    </span>
+                    {group.totalWeight > 0 ? (
                       <span className="flex items-center gap-0.5">
                         <Scale size={9} />
-                        {item.weight} kg
+                        {group.totalWeight.toFixed(1)}
                       </span>
                     ) : null}
-                  </div>
-                </div>
+                  </span>
 
-                {/* Remove */}
-                <button
-                  type="button"
-                  onClick={() => onRemove(item.gearItemId)}
-                  className="shrink-0 text-g-text-4 transition-colors hover:text-g-error-text"
-                >
-                  <Trash2 size={14} />
+                  {/* Mini progress */}
+                  <div className="w-10 h-1 rounded-full bg-g-raised overflow-hidden shrink-0">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        allPacked ? "bg-emerald-500" : "bg-g-accent"
+                      }`}
+                      style={{ width: `${groupProgress}%` }}
+                    />
+                  </div>
                 </button>
+
+                {/* Category items */}
+                {!isCollapsed ? (
+                  <div className="flex flex-col gap-1 px-3 pb-2">
+                    {group.items.map((item) => (
+                      <BagItem
+                        key={item.tripItemId}
+                        item={item}
+                        onTogglePacked={onTogglePacked}
+                        onRemove={onRemove}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             );
           })
         )}
       </div>
 
-      {/* Packed weight summary */}
+      {/* Footer summary */}
       {items.length > 0 ? (
         <div className="border-t border-g-border px-4 py-2.5 text-xs text-g-text-3">
           <span className="text-g-text-2">{packedWeight.toFixed(1)} kg</span>{" "}
           packed of {totalWeight.toFixed(1)} kg total
+          <span className="mx-1.5 text-g-text-4">·</span>
+          {groups.length} {groups.length === 1 ? "category" : "categories"}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/* ── Individual bag item ── */
+
+function BagItem({
+  item,
+  onTogglePacked,
+  onRemove,
+}: {
+  item: TripItemData;
+  onTogglePacked: (tripItemId: string, packed: boolean) => void;
+  onRemove: (gearItemId: string) => void;
+}) {
+  const Icon = getGearIcon(item.name, item.brand, item.categoryName);
+
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all ${
+        item.packed
+          ? "border-emerald-500/20 bg-emerald-500/[0.05]"
+          : "border-g-border bg-g-raised"
+      }`}
+    >
+      {/* Pack toggle */}
+      <button
+        type="button"
+        onClick={() => onTogglePacked(item.tripItemId, !item.packed)}
+        className={`shrink-0 transition-colors ${
+          item.packed
+            ? "text-emerald-400"
+            : "text-g-text-4 hover:text-g-text-2"
+        }`}
+      >
+        {item.packed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+      </button>
+
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
+        <Icon size={16} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p
+          className={`truncate text-sm font-medium ${
+            item.packed ? "text-g-text-2 line-through" : "text-g-text"
+          }`}
+        >
+          {item.name}
+        </p>
+        <div className="flex gap-2 text-[11px] text-g-text-3">
+          {item.brand ? <span>{item.brand}</span> : null}
+          {item.weight != null ? (
+            <span className="flex items-center gap-0.5">
+              <Scale size={9} />
+              {item.weight} kg
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Remove */}
+      <button
+        type="button"
+        onClick={() => onRemove(item.gearItemId)}
+        className="shrink-0 text-g-text-4 transition-colors hover:text-g-error-text"
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   );
 }

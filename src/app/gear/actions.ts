@@ -314,6 +314,12 @@ export async function updateGearItemTags(
 
 export async function quickAddGearItem(
   name: string,
+  extras?: {
+    brand?: string;
+    weight?: number;
+    price?: number;
+    category_id?: string;
+  },
 ): Promise<ActionResult> {
   if (!name || typeof name !== "string" || !name.trim()) {
     return { ok: false, message: "Name is required." };
@@ -329,12 +335,18 @@ export async function quickAddGearItem(
     return { ok: false, message: "You must be signed in." };
   }
 
-  const { error } = await supabase.from("gear_items").insert({
+  const insert: Record<string, unknown> = {
     user_id: user.id,
     name: name.trim(),
     condition: "good",
     tags: [],
-  });
+  };
+  if (extras?.brand?.trim()) insert.brand = extras.brand.trim();
+  if (extras?.weight != null && extras.weight > 0) insert.weight = extras.weight;
+  if (extras?.price != null && extras.price > 0) insert.price = extras.price;
+  if (extras?.category_id) insert.category_id = extras.category_id;
+
+  const { error } = await supabase.from("gear_items").insert(insert);
 
   if (error) {
     return { ok: false, message: error.message };
