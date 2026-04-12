@@ -1,7 +1,20 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Mountain, Compass, Backpack, Map } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex min-h-dvh flex-col bg-g-page">
       {/* Hero */}

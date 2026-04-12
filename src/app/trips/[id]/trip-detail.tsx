@@ -15,6 +15,7 @@ import {
   Check,
   CheckCircle2,
   Circle,
+  Copy,
   GripVertical,
   Loader2,
   Package,
@@ -32,6 +33,7 @@ import {
   removeItemFromTrip,
   togglePacked,
 } from "../actions";
+import { saveAsTemplate } from "../template-actions";
 import { GearPool } from "./gear-pool";
 import { TripBag } from "./trip-bag";
 
@@ -79,6 +81,10 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState(trip.name);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -171,6 +177,18 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
     await togglePacked(tripItemId, packed);
   }
 
+  async function handleSaveTemplate() {
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    const result = await saveAsTemplate(trip.id, templateName);
+    setSavingTemplate(false);
+    if (result.ok) {
+      setTemplateSaved(true);
+      setShowSaveTemplate(false);
+      setTimeout(() => setTemplateSaved(false), 3000);
+    }
+  }
+
   const draggingItem = draggingId
     ? allGear.find((g) => g.id === draggingId)
     : null;
@@ -201,13 +219,57 @@ export function TripDetail({ trip, tripItems, allGear }: TripDetailProps) {
               ) : null}
             </div>
           </div>
-          {trip.start_date ? (
-            <p className="text-sm text-g-text-3">
-              {trip.start_date}
-              {trip.end_date ? ` → ${trip.end_date}` : ""}
-            </p>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {trip.start_date ? (
+              <p className="text-sm text-g-text-3">
+                {trip.start_date}
+                {trip.end_date ? ` → ${trip.end_date}` : ""}
+              </p>
+            ) : null}
+            {templateSaved ? (
+              <span className="flex items-center gap-1 text-xs text-emerald-400">
+                <Check size={12} /> Saved
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSaveTemplate((v) => !v)}
+                className="flex items-center gap-1.5 rounded-lg border border-g-border bg-g-raised px-3 py-1.5 text-xs font-medium text-g-text-3 transition-colors hover:text-g-text-2 hover:border-g-border-active"
+              >
+                <Copy size={12} />
+                Save as template
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Save as template form */}
+        {showSaveTemplate ? (
+          <div className="flex items-center gap-2 rounded-xl border border-g-border bg-g-card px-4 py-3">
+            <input
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Template name"
+              className="h-8 flex-1 rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+            />
+            <button
+              type="button"
+              onClick={handleSaveTemplate}
+              disabled={savingTemplate || !templateName.trim()}
+              className="flex items-center gap-1 rounded-lg bg-g-accent-hover px-3 py-1.5 text-xs font-medium text-g-accent hover:bg-g-accent-hover disabled:opacity-50"
+            >
+              {savingTemplate ? <Loader2 size={10} className="animate-spin" /> : <Copy size={10} />}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSaveTemplate(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-g-text-3 hover:bg-g-raised hover:text-g-text-2"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : null}
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Backpack, Map, LogOut, Zap } from "lucide-react";
+import { Backpack, LayoutDashboard, Map, LogOut, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -11,6 +11,7 @@ type NavBarProps = {
 };
 
 const NAV_ITEMS = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/gear", label: "Gear", icon: Backpack },
   { href: "/trips", label: "Trips", icon: Map },
   { href: "/activities", label: "Activities", icon: Zap },
@@ -31,7 +32,7 @@ export function NavBar({ userEmail }: NavBarProps) {
     <nav className="sticky top-0 z-40 border-b border-g-border bg-g-page/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
         {/* Logo */}
-        <Link href="/gear" className="flex items-center gap-2.5">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
             <Backpack size={16} strokeWidth={1.5} />
           </div>
