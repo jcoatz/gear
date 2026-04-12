@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Pencil, Scale, Settings, Trash2, X } from "lucide-react";
+import { DollarSign, Heart, Pencil, Scale, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleWishlist } from "../actions";
@@ -156,6 +156,12 @@ export function GearDetailOverlay({ item, categories, onClose }: GearDetailOverl
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-g-border bg-g-raised px-3 py-1 text-sm font-medium text-g-text">
                       <Scale size={14} />
                       {item.weight} kg
+                    </span>
+                  ) : null}
+                  {item.price != null ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      <DollarSign size={14} />
+                      {item.price}
                     </span>
                   ) : null}
                 </div>

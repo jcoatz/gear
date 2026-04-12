@@ -7,6 +7,7 @@ import {
   Calendar,
   ChevronRight,
   Copy,
+  DollarSign,
   Heart,
   Loader2,
   Map,
@@ -30,6 +31,7 @@ type GearItem = {
   name: string;
   brand: string | null;
   weight: number | null;
+  price: number | null;
   wishlist: boolean;
   createdAt: string;
   categoryName: string | null;
@@ -74,7 +76,7 @@ export function DashboardClient({
   // Stats
   const totalGear = gear.length;
   const totalWeight = gear.reduce((s, g) => s + (g.weight ?? 0), 0);
-  const wishlistCount = gear.filter((g) => g.wishlist).length;
+  const totalValue = gear.reduce((s, g) => s + (g.price ?? 0), 0);
   const activityCount = Object.keys(userActivities).length;
 
   // Recommendations
@@ -123,7 +125,7 @@ export function DashboardClient({
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard
           href="/gear"
           icon={<Package size={18} className="text-g-accent" />}
@@ -137,8 +139,14 @@ export function DashboardClient({
           label="Total weight"
         />
         <StatCard
+          href="/gear"
+          icon={<DollarSign size={18} className="text-emerald-400" />}
+          value={totalValue > 0 ? `$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "$0"}
+          label="Investment"
+        />
+        <StatCard
           href="/trips"
-          icon={<Map size={18} className="text-emerald-400" />}
+          icon={<Map size={18} className="text-violet-400" />}
           value={trips.length}
           label="Trips"
         />
@@ -279,6 +287,11 @@ export function DashboardClient({
                         {[g.brand, g.categoryName].filter(Boolean).join(" · ")}
                       </p>
                     </div>
+                    {g.price != null ? (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                        ${g.price}
+                      </span>
+                    ) : null}
                     {g.weight != null ? (
                       <span className="text-xs text-g-text-3">
                         {g.weight} kg

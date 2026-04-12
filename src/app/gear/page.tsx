@@ -13,6 +13,7 @@ function normalizeGearItems(
         model: string | null;
         condition: string | null;
         weight: number | null;
+        price: number | null;
         notes: string | null;
         tags: string[] | null;
         wishlist: boolean | null;
@@ -29,6 +30,7 @@ function normalizeGearItems(
     ...row,
     tags: row.tags ?? [],
     wishlist: row.wishlist ?? false,
+    price: row.price ?? null,
     categories: Array.isArray(row.categories)
       ? (row.categories[0] ?? null)
       : row.categories,
@@ -61,6 +63,7 @@ export default async function GearPage() {
       model,
       condition,
       weight,
+      price,
       notes,
       tags,
       wishlist,

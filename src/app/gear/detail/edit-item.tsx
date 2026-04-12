@@ -20,6 +20,7 @@ export function EditItem({ item, categories, onBack, onSaved }: EditItemProps) {
   const [categoryId, setCategoryId] = useState(item.category_id ?? "");
   const [condition, setCondition] = useState(item.condition ?? "good");
   const [weight, setWeight] = useState(item.weight != null ? String(item.weight) : "");
+  const [price, setPrice] = useState(item.price != null ? String(item.price) : "");
   const [notes, setNotes] = useState(item.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function EditItem({ item, categories, onBack, onSaved }: EditItemProps) {
       category_id: categoryId,
       condition,
       weight,
+      price,
       notes,
     });
     setSaving(false);
@@ -126,6 +128,16 @@ export function EditItem({ item, categories, onBack, onSaved }: EditItemProps) {
               onChange={(e) => setWeight(e.target.value)}
               inputMode="decimal"
               placeholder="e.g. 2.5"
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-g-text-2">Price ($)</label>
+            <input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              inputMode="decimal"
+              placeholder="e.g. 299"
               className={inputClass}
             />
           </div>

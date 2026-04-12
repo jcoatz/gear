@@ -28,6 +28,16 @@ export async function addGearItem(
     weight = n;
   }
 
+  const priceRaw = parsed.data.price.trim();
+  let price: number | null = null;
+  if (priceRaw.length > 0) {
+    const p = Number(priceRaw);
+    if (Number.isNaN(p)) {
+      return { ok: false, message: "Price must be a number." };
+    }
+    price = p;
+  }
+
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   const {
@@ -46,6 +56,7 @@ export async function addGearItem(
     category_id: parsed.data.category_id,
     condition: parsed.data.condition,
     weight,
+    price,
     notes: parsed.data.notes.trim() || null,
     tags: parsed.data.tags ?? [],
   });
@@ -165,6 +176,7 @@ export type UpdateGearItemInput = {
   category_id: string;
   condition: string;
   weight: string;
+  price: string;
   notes: string;
 };
 
@@ -201,6 +213,16 @@ export async function updateGearItem(
     return { ok: false, message: "You must be signed in." };
   }
 
+  const priceRawUpd = parsed.data.price.trim();
+  let priceUpd: number | null = null;
+  if (priceRawUpd.length > 0) {
+    const p = Number(priceRawUpd);
+    if (Number.isNaN(p)) {
+      return { ok: false, message: "Price must be a number." };
+    }
+    priceUpd = p;
+  }
+
   const { error } = await supabase
     .from("gear_items")
     .update({
@@ -210,6 +232,7 @@ export async function updateGearItem(
       category_id: parsed.data.category_id,
       condition: parsed.data.condition,
       weight,
+      price: priceUpd,
       notes: parsed.data.notes.trim() || null,
     })
     .eq("id", id)

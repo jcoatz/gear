@@ -15,6 +15,7 @@ export const gearItemFormSchema = z.object({
   category_id: z.string().uuid("Select a category"),
   condition: z.enum(GEAR_CONDITIONS),
   weight: z.string(),
+  price: z.string(),
   notes: z.string(),
   tags: z.array(z.string()),
 });

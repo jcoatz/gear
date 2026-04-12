@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("gear_items")
-      .select("id, name, brand, weight, wishlist, created_at, category_id, categories ( name )")
+      .select("id, name, brand, weight, price, wishlist, created_at, category_id, categories ( name )")
       .order("created_at", { ascending: false }),
     supabase
       .from("trips")
@@ -50,6 +50,7 @@ export default async function DashboardPage() {
       name: g.name as string,
       brand: g.brand as string | null,
       weight: g.weight as number | null,
+      price: (g.price ?? null) as number | null,
       wishlist: (g.wishlist ?? false) as boolean,
       createdAt: g.created_at as string,
       categoryName: Array.isArray(cats)

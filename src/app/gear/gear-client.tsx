@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   Backpack,
+  DollarSign,
   Heart,
   LayoutGrid,
   Package,
@@ -42,6 +43,7 @@ export type GearItemRow = {
   model: string | null;
   condition: string | null;
   weight: number | null;
+  price: number | null;
   notes: string | null;
   tags: string[];
   wishlist: boolean;
@@ -192,6 +194,12 @@ function GearGridCard({
                 {item.weight} kg
               </span>
             ) : null}
+            {item.price != null ? (
+              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5">
+                <DollarSign size={10} />
+                {item.price}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -230,6 +238,7 @@ export function GearClient({
       category_id: categories[0]?.id ?? "",
       condition: "good",
       weight: "",
+      price: "",
       notes: "",
       tags: [],
     }),
@@ -243,6 +252,11 @@ export function GearClient({
 
   const totalWeight = useMemo(
     () => items.reduce((sum, item) => sum + (item.weight ?? 0), 0),
+    [items],
+  );
+
+  const totalValue = useMemo(
+    () => items.reduce((sum, item) => sum + (item.price ?? 0), 0),
     [items],
   );
 
@@ -320,7 +334,7 @@ export function GearClient({
         ) : null}
 
         {/* ── Stats bar ── */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
               <Package size={18} />
@@ -341,6 +355,17 @@ export function GearClient({
                 {totalWeight > 0 ? totalWeight.toFixed(1) : "0"}
               </p>
               <p className="mt-0.5 text-xs text-g-text-3">Total kg</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+              <DollarSign size={18} />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold leading-none text-g-text">
+                ${totalValue > 0 ? totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "0"}
+              </p>
+              <p className="mt-0.5 text-xs text-g-text-3">Investment</p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 backdrop-blur-md">
@@ -561,6 +586,20 @@ export function GearClient({
                     inputMode="decimal"
                     placeholder="e.g. 2.5 (kg)"
                     {...form.register("weight")}
+                    className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
+                  />
+                </div>
+
+                {/* Price */}
+                <div className="space-y-1.5">
+                  <label htmlFor="gear-price" className="text-sm font-medium text-g-text-2">
+                    Price ($)
+                  </label>
+                  <input
+                    id="gear-price"
+                    inputMode="decimal"
+                    placeholder="e.g. 299"
+                    {...form.register("price")}
                     className="h-9 w-full rounded-lg border border-g-input-border bg-g-input px-3 text-sm text-g-text placeholder:text-g-text-3 focus:border-g-border-active focus:outline-none focus:ring-1 focus:ring-g-accent-surface"
                   />
                 </div>
