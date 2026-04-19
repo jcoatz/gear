@@ -1,6 +1,13 @@
 "use client";
 
-import { Backpack, Briefcase, LayoutDashboard, Map, LogOut, Zap } from "lucide-react";
+import {
+  Backpack,
+  Briefcase,
+  LayoutDashboard,
+  Map,
+  LogOut,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -30,34 +37,61 @@ export function NavBar({ userEmail }: NavBarProps) {
   }
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-g-border bg-g-page/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
+    <div className="sticky top-0 z-40 flex justify-center px-3 pt-3 sm:px-6 sm:pt-4">
+      {/* Page-top fade so content slips under the floating bar */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-24 bg-gradient-to-b from-g-page via-g-page/80 to-transparent"
+      />
+
+      <nav className="surface-glass relative flex h-14 w-full max-w-6xl items-center gap-2 rounded-2xl px-3 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.25)]">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent">
-            <Backpack size={16} strokeWidth={1.5} />
+        <Link
+          href="/dashboard"
+          className="group flex shrink-0 items-center gap-2.5 rounded-xl px-2 py-1.5"
+        >
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-g-accent-surface text-g-accent ring-1 ring-inset ring-g-border-active transition-transform group-hover:scale-105">
+            <Backpack size={15} strokeWidth={1.75} />
+            <span
+              aria-hidden
+              className="absolute inset-0 rounded-lg bg-g-accent/30 blur-lg opacity-0 transition-opacity group-hover:opacity-100"
+            />
           </div>
-          <span className="text-sm font-bold tracking-tight text-g-text">
+          <span className="font-display text-base font-medium tracking-tight text-g-text">
             Gear
           </span>
         </Link>
 
+        <div className="mx-1 hidden h-6 w-px bg-g-border sm:block" />
+
         {/* Nav links */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 overflow-x-auto">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`relative flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-white/[0.08] text-g-text"
+                    ? "text-g-text"
                     : "text-g-text-3 hover:text-g-text"
                 }`}
               >
-                <Icon size={14} />
-                {label}
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-lg bg-g-accent-surface ring-1 ring-inset ring-g-border-active"
+                  />
+                ) : null}
+                <Icon size={14} className="relative" />
+                <span className="relative">{label}</span>
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-3 -bottom-1 h-px bg-gradient-to-r from-transparent via-g-accent to-transparent"
+                  />
+                ) : null}
               </Link>
             );
           })}
@@ -66,7 +100,9 @@ export function NavBar({ userEmail }: NavBarProps) {
         <div className="flex-1" />
 
         {/* Email + controls */}
-        <span className="hidden text-xs text-g-text-3 sm:block">{userEmail}</span>
+        <span className="hidden max-w-[180px] truncate text-xs text-g-text-3 md:block">
+          {userEmail}
+        </span>
         <ThemeToggle />
         <button
           type="button"
@@ -76,7 +112,7 @@ export function NavBar({ userEmail }: NavBarProps) {
           <LogOut size={14} />
           <span className="hidden sm:inline">Sign out</span>
         </button>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

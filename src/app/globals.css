@@ -22,6 +22,12 @@
   --g-input-border: oklch(0.85 0.008 75);
   --g-dot: oklch(0 0 0 / 0.05);
   --g-glow: oklch(0.769 0.188 70 / 0.06);
+  --g-accent-2: oklch(0.58 0.14 220);
+  --g-accent-2-surface: oklch(0.94 0.04 220);
+  --g-topo-stroke: oklch(0 0 0 / 0.05);
+  --g-aurora-1: oklch(0.90 0.12 78 / 0.35);
+  --g-aurora-2: oklch(0.88 0.08 220 / 0.28);
+  --g-aurora-3: oklch(0.90 0.10 320 / 0.22);
   --g-cond-new-bg: oklch(0.94 0.06 163);
   --g-cond-new-text: oklch(0.40 0.12 163);
   --g-cond-good-bg: oklch(0.93 0.04 240);
@@ -89,6 +95,12 @@
   --g-input-border: oklch(1 0 0 / 0.08);
   --g-dot: oklch(1 0 0 / 0.05);
   --g-glow: oklch(0.80 0.16 70 / 0.07);
+  --g-accent-2: oklch(0.78 0.14 220);
+  --g-accent-2-surface: oklch(0.78 0.14 220 / 0.15);
+  --g-topo-stroke: oklch(1 0 0 / 0.045);
+  --g-aurora-1: oklch(0.78 0.18 70 / 0.22);
+  --g-aurora-2: oklch(0.65 0.22 255 / 0.22);
+  --g-aurora-3: oklch(0.70 0.22 320 / 0.18);
   --g-cond-new-bg: oklch(0.30 0.06 163 / 0.3);
   --g-cond-new-text: oklch(0.80 0.10 163);
   --g-cond-good-bg: oklch(0.30 0.05 240 / 0.3);
@@ -140,9 +152,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display);
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -200,6 +213,41 @@
   --color-g-error-text: var(--g-error-text);
   --color-g-success-bg: var(--g-success-bg);
   --color-g-success-text: var(--g-success-text);
+  --color-g-accent-2: var(--g-accent-2);
+  --color-g-accent-2-surface: var(--g-accent-2-surface);
+
+  --animate-aurora: aurora 22s ease-in-out infinite;
+  --animate-float: float 8s ease-in-out infinite;
+  --animate-drift: drift 14s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-reveal: reveal 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes aurora {
+  0%, 100% { transform: translate3d(-6%, -4%, 0) rotate(0deg) scale(1); opacity: 0.9; }
+  33% { transform: translate3d(4%, 2%, 0) rotate(4deg) scale(1.08); opacity: 1; }
+  66% { transform: translate3d(-2%, 6%, 0) rotate(-3deg) scale(0.95); opacity: 0.85; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes drift {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(12px) translateY(-6px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(28px) scale(0.98); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
 @layer base {
@@ -211,5 +259,101 @@
   }
   html {
     @apply font-sans;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--g-accent) 40%, transparent);
+    color: var(--g-text);
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-feature-settings: "ss01", "ss02", "liga", "calt";
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+@utility text-gradient-accent {
+  background: linear-gradient(
+    105deg,
+    var(--g-text) 0%,
+    var(--g-accent) 45%,
+    var(--g-accent-2) 85%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@utility bg-topo {
+  background-color: transparent;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'><g fill='none' stroke='%23888' stroke-opacity='0.12' stroke-width='1'><path d='M-50 300 Q 150 220 300 300 T 650 300'/><path d='M-50 340 Q 150 260 300 340 T 650 340'/><path d='M-50 380 Q 150 300 300 380 T 650 380'/><path d='M-50 260 Q 150 180 300 260 T 650 260'/><path d='M-50 220 Q 150 140 300 220 T 650 220'/><path d='M-50 180 Q 150 100 300 180 T 650 180'/><path d='M-50 420 Q 150 340 300 420 T 650 420'/><path d='M-50 460 Q 150 380 300 460 T 650 460'/><path d='M-50 500 Q 150 420 300 500 T 650 500'/><circle cx='300' cy='300' r='90' /><circle cx='300' cy='300' r='140' /><circle cx='300' cy='300' r='200' /></g></svg>");
+  background-size: 700px 700px;
+  background-repeat: repeat;
+}
+
+@utility bg-grid-fade {
+  background-image:
+    linear-gradient(to right, var(--g-topo-stroke) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--g-topo-stroke) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 75%);
+}
+
+@utility surface-glass {
+  background: color-mix(in oklch, var(--g-card) 72%, transparent);
+  border: 1px solid var(--g-border);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklch, white 6%, transparent) inset,
+    0 20px 40px -24px color-mix(in oklch, black 40%, transparent);
+}
+
+@utility surface-glow {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--g-accent) 40%, transparent),
+      transparent 40%,
+      color-mix(in oklch, var(--g-accent-2) 30%, transparent)
+    );
+    -webkit-mask:
+      linear-gradient(black, black) content-box,
+      linear-gradient(black, black);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+@utility shimmer-border {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 40%,
+      color-mix(in oklch, var(--g-accent) 35%, transparent) 50%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+    pointer-events: none;
+    mix-blend-mode: overlay;
   }
 }

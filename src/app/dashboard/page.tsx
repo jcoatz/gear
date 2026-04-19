@@ -103,14 +103,42 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="flex min-h-screen flex-col bg-g-page">
-      <NavBar userEmail={user.email ?? ""} />
-      <DashboardClient
-        gear={gear}
-        trips={normalizedTrips}
-        userActivities={activityMap}
-        templates={normalizedTemplates}
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-g-page">
+      {/* Ambient background */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 bg-topo opacity-40"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 h-[480px] opacity-70"
+      >
+        <div
+          className="absolute -top-32 left-1/4 h-[420px] w-[420px] rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, var(--g-aurora-1), transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute -top-20 right-1/4 h-[360px] w-[360px] rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, var(--g-aurora-2), transparent 65%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 flex min-h-screen flex-col">
+        <NavBar userEmail={user.email ?? ""} />
+        <DashboardClient
+          gear={gear}
+          trips={normalizedTrips}
+          userActivities={activityMap}
+          templates={normalizedTemplates}
+          userEmail={user.email ?? ""}
+        />
+      </div>
     </div>
   );
 }

@@ -61,6 +61,7 @@ type DashboardClientProps = {
   trips: Trip[];
   userActivities: Record<string, string>;
   templates: Template[];
+  userEmail?: string;
 };
 
 export function DashboardClient({
@@ -68,6 +69,7 @@ export function DashboardClient({
   trips,
   userActivities,
   templates,
+  userEmail,
 }: DashboardClientProps) {
   const router = useRouter();
   const [deletingTemplate, setDeletingTemplate] = useState<string | null>(null);
@@ -112,49 +114,97 @@ export function DashboardClient({
     }
   }
 
+  const greeting = getGreeting();
+  const handle = userEmail?.split("@")[0] ?? "explorer";
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-g-text">
-          Dashboard
-        </h1>
-        <p className="text-sm text-g-text-3">
-          Your gear, trips, and activities at a glance
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 pt-8 sm:p-6 sm:pt-10">
+      {/* Hero band */}
+      <section
+        className="relative overflow-hidden rounded-3xl border border-g-border bg-g-card/60 p-6 backdrop-blur-xl sm:p-8"
+        style={{ animation: "fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both" }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full blur-3xl"
+          style={{
+            background:
+              "radial-gradient(circle, var(--g-aurora-1), transparent 65%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-grid-fade opacity-60"
+        />
+
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-g-text-3">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+              {greeting} · {formatToday()}
+            </div>
+            <h1 className="font-display text-4xl font-medium leading-tight tracking-tight text-g-text sm:text-5xl">
+              Welcome back,{" "}
+              <span className="text-gradient-accent italic">{handle}</span>.
+            </h1>
+            <p className="max-w-lg text-sm text-g-text-2 sm:text-base">
+              {buildLedeSummary(totalGear, trips.length, activityCount)}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/gear"
+              className="inline-flex items-center gap-1.5 rounded-full border border-g-border bg-g-raised/70 px-3.5 py-1.5 text-xs font-medium text-g-text-2 transition-colors hover:border-g-border-active hover:text-g-text"
+            >
+              <Package size={12} /> Add gear
+            </Link>
+            <Link
+              href="/trips"
+              className="inline-flex items-center gap-1.5 rounded-full border border-g-border-active bg-g-accent-surface px-3.5 py-1.5 text-xs font-semibold text-g-accent transition-colors hover:bg-g-accent-hover"
+            >
+              <Map size={12} /> Plan a trip
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <StatCard
           href="/gear"
-          icon={<Package size={18} className="text-g-accent" />}
+          icon={<Package size={18} />}
           value={totalGear}
           label="Gear items"
+          tone="amber"
         />
         <StatCard
           href="/gear"
-          icon={<Scale size={18} className="text-sky-400" />}
+          icon={<Scale size={18} />}
           value={`${totalWeight.toFixed(1)} kg`}
           label="Total weight"
+          tone="sky"
         />
         <StatCard
           href="/gear"
-          icon={<DollarSign size={18} className="text-emerald-400" />}
+          icon={<DollarSign size={18} />}
           value={totalValue > 0 ? `$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "$0"}
           label="Investment"
+          tone="emerald"
         />
         <StatCard
           href="/trips"
-          icon={<Map size={18} className="text-violet-400" />}
+          icon={<Map size={18} />}
           value={trips.length}
           label="Trips"
+          tone="violet"
         />
         <StatCard
           href="/activities"
-          icon={<Zap size={18} className="text-orange-400" />}
+          icon={<Zap size={18} />}
           value={activityCount}
           label="Activities"
+          tone="orange"
         />
       </div>
 
@@ -163,7 +213,7 @@ export function DashboardClient({
         {/* Left column */}
         <div className="flex flex-col gap-6">
           {/* Gear recommendations */}
-          <section className="rounded-xl border border-g-border bg-g-card overflow-hidden">
+          <section className="rounded-2xl border border-g-border bg-g-card/70 backdrop-blur-sm overflow-hidden transition-colors hover:border-g-border-active/60">
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-g-accent" />
@@ -247,7 +297,7 @@ export function DashboardClient({
           </section>
 
           {/* Recent gear */}
-          <section className="rounded-xl border border-g-border bg-g-card overflow-hidden">
+          <section className="rounded-2xl border border-g-border bg-g-card/70 backdrop-blur-sm overflow-hidden transition-colors hover:border-g-border-active/60">
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
               <div className="flex items-center gap-2">
                 <Backpack size={16} className="text-g-accent" />
@@ -310,7 +360,7 @@ export function DashboardClient({
         {/* Right column */}
         <div className="flex flex-col gap-6">
           {/* Upcoming trips */}
-          <section className="rounded-xl border border-g-border bg-g-card overflow-hidden">
+          <section className="rounded-2xl border border-g-border bg-g-card/70 backdrop-blur-sm overflow-hidden transition-colors hover:border-g-border-active/60">
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-emerald-400" />
@@ -384,7 +434,7 @@ export function DashboardClient({
           </section>
 
           {/* Pack templates */}
-          <section className="rounded-xl border border-g-border bg-g-card overflow-hidden">
+          <section className="rounded-2xl border border-g-border bg-g-card/70 backdrop-blur-sm overflow-hidden transition-colors hover:border-g-border-active/60">
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
               <div className="flex items-center gap-2">
                 <Copy size={16} className="text-violet-400" />
@@ -454,7 +504,7 @@ export function DashboardClient({
           </section>
 
           {/* Activity highlights */}
-          <section className="rounded-xl border border-g-border bg-g-card overflow-hidden">
+          <section className="rounded-2xl border border-g-border bg-g-card/70 backdrop-blur-sm overflow-hidden transition-colors hover:border-g-border-active/60">
             <div className="flex items-center justify-between px-5 py-4 border-b border-g-border">
               <div className="flex items-center gap-2">
                 <Award size={16} className="text-orange-400" />
@@ -519,27 +569,120 @@ export function DashboardClient({
   );
 }
 
+type StatTone = "amber" | "sky" | "emerald" | "violet" | "orange";
+
+const TONE_STYLES: Record<
+  StatTone,
+  { icon: string; glow: string; bar: string }
+> = {
+  amber: {
+    icon: "bg-amber-500/10 text-amber-500 ring-amber-500/20 dark:text-amber-300",
+    glow: "from-amber-500/25",
+    bar: "from-amber-500/60 to-amber-500/0",
+  },
+  sky: {
+    icon: "bg-sky-500/10 text-sky-500 ring-sky-500/20 dark:text-sky-300",
+    glow: "from-sky-500/25",
+    bar: "from-sky-500/60 to-sky-500/0",
+  },
+  emerald: {
+    icon: "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20 dark:text-emerald-300",
+    glow: "from-emerald-500/25",
+    bar: "from-emerald-500/60 to-emerald-500/0",
+  },
+  violet: {
+    icon: "bg-violet-500/10 text-violet-500 ring-violet-500/20 dark:text-violet-300",
+    glow: "from-violet-500/25",
+    bar: "from-violet-500/60 to-violet-500/0",
+  },
+  orange: {
+    icon: "bg-orange-500/10 text-orange-500 ring-orange-500/20 dark:text-orange-300",
+    glow: "from-orange-500/25",
+    bar: "from-orange-500/60 to-orange-500/0",
+  },
+};
+
 function StatCard({
   href,
   icon,
   value,
   label,
+  tone = "amber",
 }: {
   href: string;
   icon: React.ReactNode;
   value: number | string;
   label: string;
+  tone?: StatTone;
 }) {
+  const t = TONE_STYLES[tone];
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-xl border border-g-border bg-g-card px-4 py-3 transition-all hover:border-g-border-active hover:shadow-lg hover:shadow-g-accent/5"
+      className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-g-border bg-g-card/70 p-4 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-g-border-active"
     >
-      {icon}
-      <div>
-        <p className="text-xl font-semibold text-g-text">{value}</p>
-        <p className="text-xs text-g-text-3">{label}</p>
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-gradient-radial ${t.glow} via-transparent to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100`}
+        style={{
+          background: `radial-gradient(circle, currentColor, transparent 60%)`,
+        }}
+      />
+      <div className="relative flex items-center justify-between">
+        <div
+          className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset ${t.icon}`}
+        >
+          {icon}
+        </div>
+        <ChevronRight
+          size={14}
+          className="text-g-text-4 transition-transform group-hover:translate-x-0.5 group-hover:text-g-text-2"
+        />
       </div>
+      <div className="relative">
+        <p className="font-display text-2xl font-medium tracking-tight text-g-text">
+          {value}
+        </p>
+        <p className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-g-text-3">
+          {label}
+        </p>
+      </div>
+      <div
+        aria-hidden
+        className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${t.bar}`}
+      />
     </Link>
   );
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 5) return "Night watch";
+  if (h < 12) return "Morning ascent";
+  if (h < 17) return "Afternoon trail";
+  if (h < 21) return "Evening camp";
+  return "Night watch";
+}
+
+function formatToday() {
+  return new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function buildLedeSummary(
+  gearCount: number,
+  tripCount: number,
+  activityCount: number,
+) {
+  if (gearCount === 0 && tripCount === 0 && activityCount === 0) {
+    return "Start by cataloguing your first piece of gear, or plan the trip that\u2019s been on your mind.";
+  }
+  const parts: string[] = [];
+  if (gearCount > 0) parts.push(`${gearCount} item${gearCount === 1 ? "" : "s"} catalogued`);
+  if (tripCount > 0) parts.push(`${tripCount} trip${tripCount === 1 ? "" : "s"} on the books`);
+  if (activityCount > 0) parts.push(`${activityCount} activit${activityCount === 1 ? "y" : "ies"} tracked`);
+  return `${parts.join(" \u00b7 ")}. Everything in its place.`;
 }
