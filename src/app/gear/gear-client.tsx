@@ -28,6 +28,18 @@ import { getGearIcon } from "./gear-icons";
 import { InlineEdit } from "./inline-edit";
 import { QuickAdd } from "./quick-add";
 import { GearRoom } from "./room/gear-room";
+import dynamic from "next/dynamic";
+const GearRoom3D = dynamic(
+  () => import("./room/gear-room-3d").then((m) => m.GearRoom3D),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[620px] items-center justify-center rounded-2xl border border-g-border bg-g-card text-sm text-g-text-3">
+        Loading 3D gear room…
+      </div>
+    ),
+  },
+);
 import { useCardTilt } from "./room/use-card-tilt";
 import {
   CONDITION_LABELS,
@@ -311,7 +323,7 @@ export function GearClient({
 }: GearClientProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [viewMode, setViewMode] = useState<"grid" | "room">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "room" | "room3d">("grid");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedItem, setSelectedItem] = useState<GearItemRow | null>(null);
@@ -420,6 +432,18 @@ export function GearClient({
                 <Warehouse size={14} />
                 Room
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("room3d")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === "room3d"
+                    ? "bg-g-raised text-g-text shadow-sm"
+                    : "text-g-text-3 hover:text-g-text-2"
+                }`}
+              >
+                <Warehouse size={14} />
+                3D
+              </button>
             </div>
           </div>
         </header>
@@ -487,7 +511,12 @@ export function GearClient({
         />
 
         {/* ── Gear items ── */}
-        {viewMode === "room" ? (
+        {viewMode === "room3d" ? (
+          <GearRoom3D
+            items={filters.filteredItems}
+            onSelectItem={setSelectedItem}
+          />
+        ) : viewMode === "room" ? (
           <GearRoom
             items={filters.filteredItems}
             categories={categories}
